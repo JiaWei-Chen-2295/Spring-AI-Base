@@ -1,0 +1,17 @@
+# IntelliJ
+.idea/
+
+# Maven build outputs
+backend/target/
+backend/.m2repo/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# AI-specific docs & configs (not for version control)
+PROJECT_PLAN.md
+.claude/
+skills/
+docs/extension-guides/
+docs/photos/

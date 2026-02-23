@@ -1,0 +1,11 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+app:
+  profile-name: prod
+  features:
+    mcp-enabled: false
+    auth-enabled: true
+    model-catalog: full

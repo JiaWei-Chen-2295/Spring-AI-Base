@@ -1,0 +1,23 @@
+spring:
+  config:
+    activate:
+      on-profile: local-full
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:${DASHSCOPE_API_KEY:}}
+      chat:
+        options:
+          model: ${OPENAI_CHAT_MODEL:qwen3-max-2026-01-23}
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+
+app:
+  profile-name: local-full
+  features:
+    mcp-enabled: true
+    auth-enabled: false
+    model-catalog: full
+  models:
+    openai-id: openai-${OPENAI_CHAT_MODEL:qwen3-max-2026-01-23}
+    dashscope-id: dashscope-${DASHSCOPE_CHAT_MODEL:qwen3-max-2026-01-23}
+  dashscope:
+    chat-model: ${DASHSCOPE_CHAT_MODEL:qwen3-max-2026-01-23}

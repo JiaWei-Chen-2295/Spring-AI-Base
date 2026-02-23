@@ -1,0 +1,7 @@
+# frontend
+node_modules
+dist
+*.log
+
+# backend
+.m2repo

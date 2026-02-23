@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>宇宙折叠站</title>
+    <style>
+      :root {
+        --bg-1: #030711;
+        --bg-2: #0c1330;
+        --bg-3: #1b1a44;
+        --star: #f4f7ff;
+        --glow-cyan: #5ff3ff;
+        --glow-gold: #ffd57a;
+        --text-main: #eef1ff;
+        --text-sub: #b3b9d5;
+        --card-bg: rgba(8, 12, 26, 0.68);
+        --card-border: rgba(128, 157, 255, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", sans-serif;
+        color: var(--text-main);
+        overflow-x: hidden;
+        background:
+          radial-gradient(circle at 18% 12%, rgba(95, 243, 255, 0.15), transparent 35%),
+          radial-gradient(circle at 78% 15%, rgba(255, 213, 122, 0.14), transparent 38%),
+          radial-gradient(circle at 50% 85%, rgba(139, 113, 255, 0.14), transparent 42%),
+          linear-gradient(120deg, var(--bg-1), var(--bg-2) 45%, var(--bg-3));
+      }
+
+      .stars,
+      .stars::before,
+      .stars::after {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        content: "";
+        pointer-events: none;
+        background-repeat: repeat;
+      }
+
+      .stars {
+        background-image: radial-gradient(circle, rgba(255, 255, 255, 0.9) 1px, transparent 1.2px);
+        background-size: 3px 3px;
+        opacity: 0.22;
+      }
+
+      .stars::before {
+        background-image: radial-gradient(circle, rgba(255, 255, 255, 0.8) 1px, transparent 1.5px);
+        background-size: 5px 5px;
+        transform: scale(1.6);
+        opacity: 0.2;
+        animation: drift 80s linear infinite;
+      }
+
+      .stars::after {
+        background-image: radial-gradient(circle, rgba(255, 255, 255, 0.7) 1px, transparent 1.3px);
+        background-size: 7px 7px;
+        transform: scale(2.2);
+        opacity: 0.16;
+        animation: drift 120s linear infinite reverse;
+      }
+
+      @keyframes drift {
+        from {
+          transform: translateY(0) scale(2.2);
+        }
+
+        to {
+          transform: translateY(-18%) scale(2.2);
+        }
+      }
+
+      .shell {
+        position: relative;
+        z-index: 1;
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 52px 20px 72px;
+      }
+
+      .hero {
+        position: relative;
+        border: 1px solid rgba(176, 197, 255, 0.24);
+        border-radius: 28px;
+        background: linear-gradient(150deg, rgba(11, 15, 31, 0.76), rgba(18, 21, 40, 0.46));
+        backdrop-filter: blur(8px);
+        padding: 40px 24px;
+        box-shadow: 0 30px 70px rgba(1, 6, 24, 0.55);
+        overflow: hidden;
+      }
+
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(32px, 6vw, 72px);
+        letter-spacing: 2px;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .hero h1 span {
+        display: block;
+        color: var(--glow-cyan);
+        text-shadow: 0 0 20px rgba(95, 243, 255, 0.65);
+      }
+
+      .hero p {
+        margin-top: 16px;
+        max-width: 560px;
+        color: var(--text-sub);
+        line-height: 1.7;
+        font-size: 16px;
+      }
+
+      .cta-row {
+        margin-top: 22px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        border: 0;
+        border-radius: 999px;
+        padding: 10px 20px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .btn.primary {
+        background: linear-gradient(120deg, #57efff, #7a9fff);
+        color: #071022;
+        box-shadow: 0 8px 26px rgba(95, 243, 255, 0.35);
+      }
+
+      .btn.secondary {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-main);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+      }
+
+      .planet-system {
+        position: absolute;
+        top: -30px;
+        right: -80px;
+        width: 380px;
+        height: 380px;
+        opacity: 0.92;
+      }
+
+      .sun {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(circle at 35% 35%, #fff0c6, #ffbe49 55%, #ff9254 100%);
+        box-shadow: 0 0 35px rgba(255, 189, 73, 0.8);
+      }
+
+      .orbit {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        border: 1px dashed rgba(255, 255, 255, 0.16);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .orbit.one {
+        width: 150px;
+        height: 150px;
+        animation: spin 9s linear infinite;
+      }
+
+      .orbit.two {
+        width: 250px;
+        height: 250px;
+        animation: spin 18s linear infinite reverse;
+      }
+
+      .orbit.three {
+        width: 330px;
+        height: 330px;
+        animation: spin 25s linear infinite;
+      }
+
+      .planet {
+        position: absolute;
+        top: -8px;
+        left: 50%;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        transform: translateX(-50%);
+      }
+
+      .planet.one {
+        background: #7affd5;
+        box-shadow: 0 0 16px rgba(122, 255, 213, 0.8);
+      }
+
+      .planet.two {
+        width: 20px;
+        height: 20px;
+        top: -10px;
+        background: #8ea7ff;
+        box-shadow: 0 0 16px rgba(142, 167, 255, 0.8);
+      }
+
+      .planet.three {
+        width: 18px;
+        height: 18px;
+        top: -9px;
+        background: #ffd57a;
+        box-shadow: 0 0 16px rgba(255, 213, 122, 0.8);
+      }
+
+      @keyframes spin {
+        to {
+          transform: translate(-50%, -50%) rotate(360deg);
+        }
+      }
+
+      .grid {
+        display: grid;
+        margin-top: 26px;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 14px;
+      }
+
+      .card {
+        grid-column: span 4;
+        border-radius: 20px;
+        padding: 20px;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        box-shadow: inset 0 0 20px rgba(133, 157, 255, 0.08), 0 14px 30px rgba(1, 6, 24, 0.4);
+      }
+
+      .card h3 {
+        margin: 0;
+        font-size: 20px;
+      }
+
+      .card p {
+        margin: 10px 0 0;
+        color: var(--text-sub);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .card.big {
+        grid-column: span 8;
+      }
+
+      .signal {
+        margin-top: 28px;
+        border: 1px solid rgba(95, 243, 255, 0.35);
+        border-radius: 16px;
+        padding: 16px;
+        background: rgba(7, 16, 34, 0.5);
+        font-family: Consolas, Monaco, monospace;
+        color: #7ef8ff;
+        white-space: pre-wrap;
+        font-size: 14px;
+      }
+
+      .meteor {
+        position: fixed;
+        top: -80px;
+        width: 2px;
+        height: 80px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.85));
+        opacity: 0;
+        transform: rotate(25deg);
+        pointer-events: none;
+        animation: fall linear forwards;
+      }
+
+      @keyframes fall {
+        0% {
+          opacity: 0;
+          transform: translate(0, 0) rotate(25deg);
+        }
+
+        10% {
+          opacity: 1;
+        }
+
+        100% {
+          opacity: 0;
+          transform: translate(-220px, 880px) rotate(25deg);
+        }
+      }
+
+      @media (max-width: 900px) {
+        .planet-system {
+          position: relative;
+          top: 0;
+          right: auto;
+          margin: 16px auto 0;
+          width: 280px;
+          height: 280px;
+        }
+
+        .hero {
+          padding: 30px 18px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .card,
+        .card.big {
+          grid-column: span 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stars"></div>
+
+    <main class="shell">
+      <section class="hero">
+        <h1>COSMOS<span>FOLD STATION</span></h1>
+        <p>
+          在这里，时间像光一样弯曲。你看到的每一颗星，都是一个过去发来的消息。按下按钮，接收一条来自深空的随机信号。
+        </p>
+        <div class="cta-row">
+          <button class="btn primary" id="signalBtn">接收深空信号</button>
+          <button class="btn secondary" id="meteorBtn">启动流星雨</button>
+        </div>
+
+        <div class="planet-system" aria-hidden="true">
+          <div class="sun"></div>
+          <div class="orbit one"><div class="planet one"></div></div>
+          <div class="orbit two"><div class="planet two"></div></div>
+          <div class="orbit three"><div class="planet three"></div></div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h3>观测站 A-17</h3>
+          <p>距离地球 42 光年，检测到高频电磁风暴，星际云密度上升 13%。</p>
+        </article>
+        <article class="card">
+          <h3>引力门状态</h3>
+          <p>曲率稳定，跃迁窗口开启 03:14:26，建议保持低能巡航。</p>
+        </article>
+        <article class="card">
+          <h3>星图温度</h3>
+          <p>背景辐射 2.7K，局部异常热点已标记，可作为下一段探索坐标。</p>
+        </article>
+        <article class="card big">
+          <h3>宇宙不是黑暗的空白，而是正在发光的档案馆</h3>
+          <p>当我们抬头时，其实是在阅读历史。你眼前这页页面，是一张给未来的门票。</p>
+        </article>
+      </section>
+
+      <section class="signal" id="signalPanel">SIGNAL:// waiting for transmission...</section>
+    </main>
+
+    <script>
+      const signalPanel = document.getElementById("signalPanel");
+      const signalBtn = document.getElementById("signalBtn");
+      const meteorBtn = document.getElementById("meteorBtn");
+
+      const signals = [
+        "SIGNAL:// VEGA-LINE 07\n>> 我们在恒星背面看见了蓝色极光。",
+        "SIGNAL:// ECHO-DELTA\n>> 重力像潮汐一样经过船体，请保持航向。",
+        "SIGNAL:// ORION-BELT NODE\n>> 你们的太阳，在我们眼里是一枚缓慢心跳。",
+        "SIGNAL:// PULSAR-19\n>> 时间在这里有回声，昨天正在追赶今天。",
+        "SIGNAL:// UNKNOWN SOURCE\n>> 若宇宙有边界，边界也在继续膨胀。"
+      ];
+
+      signalBtn.addEventListener("click", () => {
+        const pick = signals[Math.floor(Math.random() * signals.length)];
+        signalPanel.textContent = pick;
+      });
+
+      function spawnMeteor() {
+        const meteor = document.createElement("div");
+        meteor.className = "meteor";
+        meteor.style.left = Math.random() * window.innerWidth + "px";
+        meteor.style.animationDuration = (1.1 + Math.random() * 1.2).toFixed(2) + "s";
+        document.body.appendChild(meteor);
+
+        meteor.addEventListener("animationend", () => {
+          meteor.remove();
+        });
+      }
+
+      meteorBtn.addEventListener("click", () => {
+        for (let i = 0; i < 12; i += 1) {
+          setTimeout(spawnMeteor, i * 160);
+        }
+      });
+    </script>
+  </body>
+</html>
