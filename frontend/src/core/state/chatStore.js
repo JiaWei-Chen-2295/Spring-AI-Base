@@ -18,9 +18,13 @@ export const useChatStore = create((set, get) => ({
   messages: [],
   error: '',
   streamMode: true,
+  selectedTools: [],
+  selectedSkills: [],
 
   setModels: (models) => {
-    const selected = get().modelId || (models[0] && models[0].modelId) || '';
+    const current = get().modelId;
+    const stillExists = models.some((m) => m.modelId === current);
+    const selected = (stillExists && current) || (models[0] && models[0].modelId) || '';
     set({ models, modelId: selected });
   },
 
@@ -31,6 +35,8 @@ export const useChatStore = create((set, get) => ({
   setError: (error) => set({ error }),
   setLoadingModels: (loadingModels) => set({ loadingModels }),
   setStreamMode: (streamMode) => set({ streamMode }),
+  setSelectedTools: (selectedTools) => set({ selectedTools }),
+  setSelectedSkills: (selectedSkills) => set({ selectedSkills }),
 
   /** Load conversation list from backend */
   loadConversations: async () => {

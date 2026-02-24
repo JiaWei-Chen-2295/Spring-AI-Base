@@ -68,3 +68,24 @@ export async function fetchConversationMessages(conversationId) {
 export async function clearConversation(conversationId) {
   await apiClient.delete(`/api/conversations/${encodeURIComponent(conversationId)}`);
 }
+
+// ── Model Admin API ──────────────────────────────────────
+
+export async function fetchAdminModels() {
+  const resp = await apiClient.get('/api/admin/models');
+  return resp.data || [];
+}
+
+export async function upsertModel(payload) {
+  const resp = await apiClient.post('/api/admin/models', payload);
+  return resp.data;
+}
+
+export async function deleteModel(modelId) {
+  await apiClient.delete('/api/admin/models', { params: { modelId } });
+}
+
+export async function toggleModel(modelId) {
+  const resp = await apiClient.patch(`/api/admin/models/${encodeURIComponent(modelId)}/toggle`);
+  return resp.data;
+}

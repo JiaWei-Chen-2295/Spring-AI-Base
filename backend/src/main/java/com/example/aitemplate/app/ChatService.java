@@ -300,6 +300,9 @@ public class ChatService {
 
     private boolean isAgentEnabledModel(String modelId) {
         ModelAdapter adapter = modelRegistry.getOrThrow(modelId);
+        if (adapter instanceof com.example.aitemplate.plugins.model.DynamicModelAdapter) {
+            return false;
+        }
         return !"local".equalsIgnoreCase(adapter.provider());
     }
 

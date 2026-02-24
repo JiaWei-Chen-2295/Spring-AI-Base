@@ -35,14 +35,46 @@
 
 ## Features
 
-- **多模型路由** — OpenAI / DashScope / 本地 Mock，按需切换，统一接口
-- **聊天记忆 (NEW)** — JDBC 持久化，H2 零配置启动，配置切 MySQL/PostgreSQL
+- **多模型路由** — OpenAI / DashScope / DeepSeek / Ollama，按需切换，统一接口
+- **模型管理后台** — 管理员动态添加、编辑、删除、启用/禁用模型，支持任意 OpenAI 兼容 API
+- **聊天记忆** — JDBC 持久化，H2 零配置启动，配置切 MySQL/PostgreSQL
 - **Function Calling** — SAA ReactAgent 驱动，工具自动注入，支持 Tracing
 - **Skills 系统** — 命名空间 + 版本管理 + Python 脚本执行 + `skills.sh` 批量导入
 - **MCP 能力** — 按开关启用外部 MCP 工具（搜索、文件、数据库）
 - **流式输出** — SSE 实时推送 token + 工具调用元数据
 - **React 控制台** — Ant Design 5 + Zustand，模型/工具/技能/对话全可控
 - **插件化扩展** — `ModelAdapter` / `ToolAdapter` / `SkillProvider` 三大 SPI
+
+---
+
+## Screenshots
+
+### AI 对话
+
+多模型切换、流式输出（SSE）、工具调用追踪、会话历史管理。
+
+![AI Chat](docs/photos/chat.png)
+
+### 模型管理
+
+管理员后台配置和管理 AI 模型，支持内置模型启用/禁用，动态添加 OpenAI 兼容模型。
+
+![Model Management](docs/photos/model_manager.png)
+
+### 添加模型
+
+通过管理界面动态添加新模型，配置 API 地址、密钥、模型名称和能力声明，无需修改代码。
+
+![Add Model](docs/photos/add_model.png)
+
+### Skills 技能 & MCP 工具
+
+Skills 技能系统按需加载增强模型能力；MCP 协议接入外部工具，实时展示执行过程。
+
+<p>
+  <img src="docs/photos/skills.png" width="49%" alt="Skills"/>
+  <img src="docs/photos/mcp.png" width="49%" alt="MCP"/>
+</p>
 
 ---
 
@@ -139,14 +171,16 @@ Frontend (React 19 + Ant Design + Zustand)
 Backend (Spring Boot 3.5 + Spring AI 1.1)
   ├─ ChatController (/api/chat, /api/chat/stream)
   ├─ ConversationController (/api/conversations)
+  ├─ ModelAdminController (/api/admin/models) — CRUD + toggle
+  ├─ SkillAdminController (/api/admin/skills) — CRUD + import
   ├─ ChatService (ReactAgent + ChatMemory integration)
-  ├─ ModelRegistry → ModelAdapter SPI
+  ├─ ModelRegistry → builtin adapters + dynamic adapters + enable/disable
   ├─ ToolRegistry  → ToolAdapter SPI
-  ├─ SkillRegistry → SkillProvider SPI
+  ├─ SkillRegistry → builtin + dynamic skills
   └─ ChatMemory → JdbcChatMemoryRepository → H2 / MySQL
             |
             v
-Providers: DashScope / OpenAI / Local Mock
+Providers: DashScope / OpenAI / DeepSeek / Ollama / Any OpenAI-compatible
 MCP Servers: brave-search / filesystem (optional)
 ```
 
@@ -187,14 +221,23 @@ public interface SkillProvider {
 ```
 backend/
   core/          # SPI 接口定义（ModelAdapter / ToolAdapter / SkillProvider）
-  app/           # 服务编排（ChatService / Registry）
+  app/           # 服务编排（ChatService / ModelRegistry / ToolRegistry / SkillRegistry）
   plugins/       # 插件实现（model/ tool/ skill/）
-  api/           # REST 接口 + DTO
+  api/           # REST 接口 + DTO + Admin Controller
   infra/         # 基础设施（安全、HTTP、记忆配置）
 
 frontend/
+  src/pages/     # 页面（Dashboard / Chat / Models / Tools / Skills）
+  src/layouts/   # 布局（MainLayout — 暗色侧边栏 + 面包屑）
   src/core/      # API client + Zustand state
-  src/App.jsx    # 聊天控制台主界面
+  src/shared/    # 共享组件（MessageBubble / ToolCallCard）
+  src/utils/     # 工具函数（SSE streaming / format）
+
+docs/
+  photos/        # 截图
+  quickstart/    # 快速启动文档
+  extension-guides/  # 扩展指南
+  troubleshooting/   # 故障排查
 ```
 
 ---
@@ -270,8 +313,9 @@ EOF
 
 - [x] Phase 1 — 模型路由 + 工具调用 + 流式输出 + Web 控制台
 - [x] Phase 1.5 — JDBC 聊天记忆 + 对话管理 API
-- [ ] Phase 2 — MCP 插件生态 + 插件脚手架
-- [ ] Phase 3 — 鉴权 + 限流 + 审计 + 可观测 + 成本治理
+- [x] Phase 2 — 模型管理后台 + Skills 管理 + 动态模型配置
+- [ ] Phase 3 — MCP 插件生态 + 插件脚手架
+- [ ] Phase 4 — 鉴权 + 限流 + 审计 + 可观测 + 成本治理
 
 ---
 

@@ -28,6 +28,8 @@ app:
   profile-name: base
   skills:
     local-dir: skills/runtime
+  models:
+    config-dir: models/runtime
   chat:
     memory:
       max-messages: 20
