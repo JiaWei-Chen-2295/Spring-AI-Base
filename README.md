@@ -32,11 +32,13 @@
 - **多模型路由** — OpenAI / DashScope / DeepSeek / Ollama，按需切换，统一接口
 - **模型管理后台** — 管理员动态添加、编辑、删除、启用/禁用模型，支持任意 OpenAI 兼容 API
 - **聊天记忆** — JDBC 持久化，H2 零配置启动，配置切 MySQL/PostgreSQL
+- **数据库管理** — MyBatis-Plus ORM + Flyway 版本迁移，切换数据库零 SQL
 - **Function Calling** — SAA ReactAgent 驱动，工具自动注入，支持 Tracing
 - **Skills 系统** — 命名空间 + 版本管理 + Python 脚本执行 + `skills.sh` 批量导入
 - **MCP 能力** — 按开关启用外部 MCP 工具（搜索、文件、数据库）
 - **流式输出** — SSE 实时推送 token + 工具调用元数据
-- **React 控制台** — Ant Design 5 + Zustand，模型/工具/技能/对话全可控
+- **React 控制台** — Ant Design 5 + Zustand，模型/工具/技能/对话/设置全可控
+- **系统设置** — API Key 通过页面配置，DB 优先、环境变量兜底
 - **插件化扩展** — `ModelAdapter` / `ToolAdapter` / `SkillProvider` 三大 SPI
 
 ---
@@ -78,16 +80,10 @@ Skills 技能系统按需加载增强模型能力；MCP 协议接入外部工具
 
 ```bash
 cd backend
-
-# 最小启动（仅需 DashScope 密钥）
-export DASHSCOPE_API_KEY="your_key"
-mvn spring-boot:run -Dspring-boot.run.profiles=local-minimal
-
-# 完整启动（OpenAI + DashScope + MCP）
-export OPENAI_API_KEY="your_key"
-export DASHSCOPE_API_KEY="your_key"
-mvn spring-boot:run -Dspring-boot.run.profiles=local-full
+mvn spring-boot:run
 ```
+
+> 零配置即可启动（H2 内存库，无需数据库和 API Key）。API Key 启动后在前端 **Settings** 页面配置即可。
 
 ### 2. 启动前端
 
@@ -111,38 +107,30 @@ npm run dev
 
 启动即用，无需任何额外配置。聊天记录自动持久化，支持对话历史回溯。
 
-### 切换 MySQL
+### 切换 MySQL（自动建库建表）
 
-```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=local-minimal,mysql
-```
-
-设置环境变量：
-
-```bash
-export DB_USERNAME="root"
-export DB_PASSWORD="your_password"
-```
-
-MySQL 配置文件 `application-mysql.yml`：
+创建 `backend/src/main/resources/application-local.yml`：
 
 ```yaml
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/ai_template?useSSL=false&serverTimezone=UTC
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:}
+    url: jdbc:mysql://localhost:3306/ai_template?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: your_password
     driver-class-name: com.mysql.cj.jdbc.Driver
 ```
 
-### 调整记忆窗口
+启动时指定 profile：
 
-```yaml
-app:
-  chat:
-    memory:
-      max-messages: 20    # 每个对话保留最近 N 条消息
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
+
+> **无需手动建库建表** — `createDatabaseIfNotExist=true` 自动创建数据库，Flyway 自动执行建表迁移。
+
+### 配置参考
+
+所有可配置项见 `application-example.yml`，包含完整注释和 local/test/prod 三种 profile 示例。
 
 ### 对话管理 API
 
@@ -171,7 +159,8 @@ Backend (Spring Boot 3.5 + Spring AI 1.1)
   ├─ ModelRegistry → builtin adapters + dynamic adapters + enable/disable
   ├─ ToolRegistry  → ToolAdapter SPI
   ├─ SkillRegistry → builtin + dynamic skills
-  └─ ChatMemory → JdbcChatMemoryRepository → H2 / MySQL
+  ├─ ChatMemory → JdbcChatMemoryRepository → H2 / MySQL
+  └─ MyBatis-Plus + Flyway → app_settings / model_config tables
             |
             v
 Providers: DashScope / OpenAI / DeepSeek / Ollama / Any OpenAI-compatible
@@ -214,14 +203,17 @@ public interface SkillProvider {
 
 ```
 backend/
-  core/          # SPI 接口定义（ModelAdapter / ToolAdapter / SkillProvider）
-  app/           # 服务编排（ChatService / ModelRegistry / ToolRegistry / SkillRegistry）
+  core/          # SPI 接口定义（ModelAdapter / ToolAdapter / SkillProvider）+ 领域模型
+  app/           # 服务编排（ChatService / ModelRegistry / ToolRegistry / SkillRegistry / SettingsService）
   plugins/       # 插件实现（model/ tool/ skill/）
   api/           # REST 接口 + DTO + Admin Controller
-  infra/         # 基础设施（安全、HTTP、记忆配置）
+  infra/         # 基础设施（安全、HTTP、记忆、数据库）
+    db/entity/   # MyBatis-Plus 实体
+    db/mapper/   # MyBatis-Plus Mapper 接口
+    db/typehandler/ # 自定义类型处理器
 
 frontend/
-  src/pages/     # 页面（Dashboard / Chat / Models / Tools / Skills）
+  src/pages/     # 页面（Dashboard / Chat / Models / Tools / Skills / Settings）
   src/layouts/   # 布局（MainLayout — 暗色侧边栏 + 面包屑）
   src/core/      # API client + Zustand state
   src/shared/    # 共享组件（MessageBubble / ToolCallCard）
@@ -238,12 +230,16 @@ docs/
 
 ## API Key Configuration
 
+API Key 支持三种配置方式（优先级从高到低）：
+
+1. **页面设置** — 前端 Settings 页面配置，存入数据库
+2. **环境变量** — `DASHSCOPE_API_KEY`、`OPENAI_API_KEY`
+3. **yml 配置** — `application.yml` 或自定义 profile
+
 | 环境变量 | 用途 | 必填 |
 |---|---|---|
-| `DASHSCOPE_API_KEY` | DashScope / 通义千问 | local-minimal 必填 |
-| `OPENAI_API_KEY` | OpenAI 兼容接口 | local-full 必填 |
-| `DB_USERNAME` | MySQL 用户名 | mysql profile 必填 |
-| `DB_PASSWORD` | MySQL 密码 | mysql profile 必填 |
+| `DASHSCOPE_API_KEY` | DashScope / 通义千问 | 可通过页面配置替代 |
+| `OPENAI_API_KEY` | OpenAI 兼容接口 | 可通过页面配置替代 |
 
 <details>
 <summary><b>Windows PowerShell 配置</b></summary>
@@ -265,7 +261,7 @@ $env:OPENAI_API_KEY="your_key"
 
 ### 验证 Function Calling
 
-1. 使用 `local-full` 启动后端
+1. 启动后端，在 Settings 页面配置 API Key（或设置环境变量）
 2. 前端选择真实模型（如 `dashscope-qwen3.5-plus`）
 3. 勾选工具：`weather.query` 或 `mcp.time.now`
 4. 提问：`帮我查一下北京天气并总结`
@@ -296,6 +292,8 @@ EOF
 | Layer | Technology |
 |---|---|
 | Backend | Spring Boot 3.5.9, Spring AI 1.1.2, Spring AI Alibaba 1.1.2.0 |
+| ORM | MyBatis-Plus 3.5.16 |
+| Migration | Flyway |
 | Frontend | React 19, Vite 7, Ant Design 5, Zustand |
 | Database | H2 (default) / MySQL / PostgreSQL |
 | AI Models | OpenAI, DashScope, Local Mock |
@@ -308,6 +306,7 @@ EOF
 - [x] Phase 1 — 模型路由 + 工具调用 + 流式输出 + Web 控制台
 - [x] Phase 1.5 — JDBC 聊天记忆 + 对话管理 API
 - [x] Phase 2 — 模型管理后台 + Skills 管理 + 动态模型配置
+- [x] Phase 2.5 — MyBatis-Plus + Flyway + 系统设置页面 + yml 精简
 - [ ] Phase 3 — MCP 插件生态 + 插件脚手架
 - [ ] Phase 4 — 鉴权 + 限流 + 审计 + 可观测 + 成本治理
 
