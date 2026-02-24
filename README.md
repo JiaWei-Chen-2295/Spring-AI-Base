@@ -1,7 +1,7 @@
-<h1 align="center">Spring AI Template</h1>
+<h1 align="center">Spring AI Reference Project</h1>
 
 <p align="center">
-  <b>开箱即用的企业级 AI 应用模板 — 30 分钟从零到生产</b>
+  <b>一个面向 Spring 生态的 AI 应用参考项目，提供多模型接入、工具调用和可扩展工程结构。</b>
 </p>
 
 <p align="center">
@@ -9,13 +9,7 @@
   <img src="https://img.shields.io/badge/Spring%20AI-1.1.2-6DB33F?logo=spring&logoColor=white" alt="Spring AI 1.1.2"/>
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" alt="React 19"/>
   <img src="https://img.shields.io/badge/Java-17+-ED8B00?logo=openjdk&logoColor=white" alt="Java 17+"/>
-  <img src="https://img.shields.io/badge/License-MIT-blue" alt="License"/>
-</p>
-
-<p align="center">
-  <b>
-    觉得有用？请给个 Star 支持一下！
-  </b>
+  <img src="https://img.shields.io/badge/License-Apache%202.0-blue" alt="License"/>
 </p>
 
 ---
@@ -331,6 +325,6 @@ EOF
 
 ---
 
-<p align="center">
-  <b>如果这个模板帮到了你，请点个 Star 让更多人看到！</b>
-</p>
+## License
+
+本项目采用 [Apache License 2.0](./LICENSE) 开源协议。
