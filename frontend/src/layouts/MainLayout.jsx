@@ -11,6 +11,7 @@ import {
   MenuUnfoldOutlined,
   UserOutlined,
   ApiOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -30,6 +31,8 @@ const MENU_ITEMS = [
       { key: '/skills', icon: <BookOutlined />, label: '技能管理' },
     ],
   },
+  { type: 'divider' },
+  { key: '/settings', icon: <SettingOutlined />, label: '系统配置' },
 ];
 
 const BREADCRUMBS = {
@@ -38,6 +41,7 @@ const BREADCRUMBS = {
   '/models': [{ title: 'AI Template' }, { title: '资源管理' }, { title: '模型管理' }],
   '/tools': [{ title: 'AI Template' }, { title: '资源管理' }, { title: '工具管理' }],
   '/skills': [{ title: 'AI Template' }, { title: '资源管理' }, { title: '技能管理' }],
+  '/settings': [{ title: 'AI Template' }, { title: '系统配置' }],
 };
 
 export default function MainLayout() {

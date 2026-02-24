@@ -4,7 +4,7 @@ spring:
       on-profile: local-full
   ai:
     openai:
-      api-key: ${OPENAI_API_KEY:${DASHSCOPE_API_KEY:}}
+      api-key: ${OPENAI_API_KEY:${DASHSCOPE_API_KEY:placeholder-key}}
       chat:
         options:
           model: ${OPENAI_CHAT_MODEL:qwen3-max-2026-01-23}

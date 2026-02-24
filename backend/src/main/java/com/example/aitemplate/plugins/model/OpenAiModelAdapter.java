@@ -19,12 +19,15 @@ public class OpenAiModelAdapter implements ModelAdapter {
 
     private final OpenAiChatModel chatModel;
     private final String modelId;
+    private final String configuredApiKey;
 
     public OpenAiModelAdapter(
             @Qualifier("openAiChatModel") OpenAiChatModel chatModel,
-            @Value("${app.models.openai-id:openai-gpt-4o}") String modelId) {
+            @Value("${app.models.openai-id:openai-gpt-4o}") String modelId,
+            @Value("${spring.ai.openai.api-key:}") String configuredApiKey) {
         this.chatModel = chatModel;
         this.modelId = modelId;
+        this.configuredApiKey = configuredApiKey;
     }
 
     @Override
@@ -44,6 +47,10 @@ public class OpenAiModelAdapter implements ModelAdapter {
 
     @Override
     public HealthStatus health() {
+        if (configuredApiKey == null || configuredApiKey.isBlank()
+                || configuredApiKey.equals("placeholder-key")) {
+            return HealthStatus.DOWN;
+        }
         return HealthStatus.UP;
     }
 

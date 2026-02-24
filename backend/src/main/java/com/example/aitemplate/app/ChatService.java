@@ -95,14 +95,25 @@ public class ChatService {
      */
     public Flux<String> streamWithToolTrace(ChatCommand command) {
         ChatModel springChatModel = springChatModelProvider.getIfAvailable();
-        if (springChatModel != null && isAgentEnabledModel(command.modelId())) {
+        boolean hasToolsOrSkills = (command.tools() != null && !command.tools().isEmpty())
+                || (command.skills() != null && !command.skills().isEmpty());
+
+        if (springChatModel != null && isAgentEnabledModel(command.modelId()) && hasToolsOrSkills) {
+            // Agent path: required when tools/skills need to be invoked
             ChatResult result = chat(command);
             Flux<String> toolEvents = Flux.fromIterable(result.toolCalls())
                     .map(tc -> "TOOL_CALL:" + GSON.toJson(tc));
             Flux<String> contentTokens = Flux.just(result.content());
             return toolEvents.concatWith(contentTokens);
         }
-        return modelRegistry.getOrThrow(command.modelId()).stream(command);
+
+        // Direct stream path: real token-by-token streaming with memory persistence
+        chatMemory.add(command.conversationId(), new UserMessage(command.message()));
+        StringBuilder collected = new StringBuilder();
+        return modelRegistry.getOrThrow(command.modelId()).stream(command)
+                .doOnNext(collected::append)
+                .doOnComplete(() ->
+                        chatMemory.add(command.conversationId(), new AssistantMessage(collected.toString())));
     }
 
     private ChatResult chatWithSaaAgent(

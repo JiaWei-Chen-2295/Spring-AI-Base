@@ -2,14 +2,8 @@ package com.example.aitemplate.app;
 
 import com.example.aitemplate.core.model.ModelAdapter;
 import com.example.aitemplate.core.model.ModelConfig;
+import com.example.aitemplate.infra.db.ModelConfigRepository;
 import com.example.aitemplate.plugins.model.DynamicModelAdapter;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -18,7 +12,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -29,24 +22,19 @@ public class ModelRegistry {
     private final Map<String, ModelAdapter> builtinAdapters;
     private final Map<String, DynamicModelAdapter> dynamicAdapters;
     private final Set<String> disabledModelIds;
-    private final Path modelConfigRoot;
-    private final ObjectMapper objectMapper;
+    private final ModelConfigRepository modelConfigRepo;
 
-    public ModelRegistry(
-            List<ModelAdapter> adapters,
-            @Value("${app.models.config-dir:models/runtime}") String configDir,
-            ObjectMapper objectMapper) {
+    public ModelRegistry(List<ModelAdapter> adapters, ModelConfigRepository modelConfigRepo) {
         this.builtinAdapters = new ConcurrentHashMap<>();
         this.dynamicAdapters = new ConcurrentHashMap<>();
         this.disabledModelIds = ConcurrentHashMap.newKeySet();
-        this.objectMapper = objectMapper;
-        this.modelConfigRoot = Paths.get(configDir).toAbsolutePath().normalize();
+        this.modelConfigRepo = modelConfigRepo;
 
         for (ModelAdapter adapter : adapters) {
             this.builtinAdapters.put(adapter.modelId(), adapter);
         }
 
-        loadFromDisk();
+        loadFromDb();
     }
 
     /** Returns only enabled models — used by ChatService and MetadataController. */
@@ -80,8 +68,7 @@ public class ModelRegistry {
     public ModelAdapter getOrThrow(String modelId) {
         ModelAdapter adapter = builtinAdapters.get(modelId);
         if (adapter == null) {
-            DynamicModelAdapter dynamic = dynamicAdapters.get(modelId);
-            adapter = dynamic;
+            adapter = dynamicAdapters.get(modelId);
         }
         if (adapter == null) {
             throw new IllegalArgumentException("Unknown modelId: " + modelId);
@@ -101,7 +88,7 @@ public class ModelRegistry {
         } else {
             disabledModelIds.remove(config.modelId());
         }
-        persistModelConfig(config);
+        modelConfigRepo.save(config);
         return adapter;
     }
 
@@ -109,7 +96,7 @@ public class ModelRegistry {
         DynamicModelAdapter removed = dynamicAdapters.remove(modelId);
         if (removed != null) {
             disabledModelIds.remove(modelId);
-            deleteModelConfigFiles(modelId);
+            modelConfigRepo.delete(modelId);
             return true;
         }
         return false;
@@ -127,7 +114,6 @@ public class ModelRegistry {
             disabledModelIds.add(modelId);
             nowEnabled = false;
         }
-        persistDisabledState();
         DynamicModelAdapter dynamic = dynamicAdapters.get(modelId);
         if (dynamic != null) {
             ModelConfig old = dynamic.config();
@@ -135,94 +121,22 @@ public class ModelRegistry {
                     old.modelId(), old.provider(), old.displayName(),
                     old.baseUrl(), old.apiKey(), old.modelName(),
                     nowEnabled, old.capabilities(), old.sortOrder());
-            persistModelConfig(updated);
+            modelConfigRepo.save(updated);
         }
         return nowEnabled;
     }
 
-    // ── Filesystem persistence ──────────────────────────────
+    // ── DB persistence ──────────────────────────────────────
 
-    private void loadFromDisk() {
-        try {
-            if (!Files.exists(modelConfigRoot)) {
-                Files.createDirectories(modelConfigRoot);
-                return;
-            }
-            loadDisabledState();
-            try (var stream = Files.walk(modelConfigRoot)) {
-                stream.filter(path -> path.getFileName().toString().equals("model.config.json"))
-                        .forEach(this::loadOneModelConfig);
-            }
-        } catch (IOException ex) {
-            log.error("Failed to initialize model config directory: {}", modelConfigRoot, ex);
-        }
-    }
-
-    private void loadOneModelConfig(Path configPath) {
-        try {
-            String json = Files.readString(configPath, StandardCharsets.UTF_8);
-            ModelConfig config = objectMapper.readValue(json, ModelConfig.class);
+    private void loadFromDb() {
+        List<ModelConfig> configs = modelConfigRepo.findAll();
+        for (ModelConfig config : configs) {
             DynamicModelAdapter adapter = new DynamicModelAdapter(config);
             dynamicAdapters.put(config.modelId(), adapter);
             if (!config.enabled()) {
                 disabledModelIds.add(config.modelId());
             }
-            log.info("Loaded dynamic model: {}", config.modelId());
-        } catch (Exception ex) {
-            log.warn("Skipping broken model config: {}", configPath, ex);
-        }
-    }
-
-    private void persistModelConfig(ModelConfig config) {
-        try {
-            Path dir = modelConfigRoot.resolve(sanitize(config.modelId()));
-            Files.createDirectories(dir);
-            Path configPath = dir.resolve("model.config.json");
-            String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(config);
-            Files.writeString(configPath, json, StandardCharsets.UTF_8);
-        } catch (IOException ex) {
-            throw new IllegalStateException("Failed to persist model config: " + config.modelId(), ex);
-        }
-    }
-
-    private void deleteModelConfigFiles(String modelId) {
-        Path dir = modelConfigRoot.resolve(sanitize(modelId));
-        try {
-            if (!Files.exists(dir)) {
-                return;
-            }
-            try (var stream = Files.walk(dir)) {
-                stream.sorted((a, b) -> b.getNameCount() - a.getNameCount())
-                        .forEach(path -> {
-                            try { Files.deleteIfExists(path); } catch (IOException ignore) {}
-                        });
-            }
-        } catch (IOException ignore) {}
-    }
-
-    private void loadDisabledState() {
-        Path disabledFile = modelConfigRoot.resolve("_disabled.json");
-        if (!Files.exists(disabledFile)) {
-            return;
-        }
-        try {
-            String json = Files.readString(disabledFile, StandardCharsets.UTF_8);
-            List<String> ids = objectMapper.readValue(json, new TypeReference<List<String>>() {});
-            disabledModelIds.addAll(ids);
-        } catch (Exception ex) {
-            log.warn("Failed to load disabled state: {}", disabledFile, ex);
-        }
-    }
-
-    private void persistDisabledState() {
-        try {
-            Files.createDirectories(modelConfigRoot);
-            Path disabledFile = modelConfigRoot.resolve("_disabled.json");
-            String json = objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(List.copyOf(disabledModelIds));
-            Files.writeString(disabledFile, json, StandardCharsets.UTF_8);
-        } catch (IOException ex) {
-            log.warn("Failed to persist disabled state", ex);
+            log.info("Loaded dynamic model from DB: {}", config.modelId());
         }
     }
 
@@ -233,9 +147,6 @@ public class ModelRegistry {
         if (config.baseUrl() == null || config.baseUrl().isBlank()) {
             throw new IllegalArgumentException("baseUrl is required");
         }
-        if (config.apiKey() == null || config.apiKey().isBlank()) {
-            throw new IllegalArgumentException("apiKey is required");
-        }
         if (config.modelName() == null || config.modelName().isBlank()) {
             throw new IllegalArgumentException("modelName is required");
         }
@@ -243,11 +154,6 @@ public class ModelRegistry {
             throw new IllegalArgumentException(
                     "Cannot create dynamic model with same ID as builtin: " + config.modelId());
         }
-    }
-
-    private String sanitize(String value) {
-        String s = value == null ? "" : value.replaceAll("[^A-Za-z0-9._-]", "_");
-        return s.isBlank() ? "_" : s;
     }
 
     public record ModelEntry(ModelAdapter adapter, String source, boolean editable, boolean enabled) {}
