@@ -14,7 +14,7 @@ PROJECT_PLAN.md
 .claude/
 skills/
 docs/extension-guides/
-models/runtime/deepseek/model.config.json
 models/runtime/
 backend/models/
 CLAUDE.md
+application-local.yml

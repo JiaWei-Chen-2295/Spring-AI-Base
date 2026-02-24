@@ -1,7 +1,7 @@
 package com.example.aitemplate.api.controller;
 
 import com.example.aitemplate.app.SettingsService;
-import com.example.aitemplate.infra.db.AppSettingsRepository.SettingEntry;
+import com.example.aitemplate.core.model.SettingEntry;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;

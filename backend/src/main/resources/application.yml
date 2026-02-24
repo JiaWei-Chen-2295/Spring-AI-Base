@@ -11,6 +11,10 @@ spring:
   datasource:
     url: jdbc:h2:mem:aimemory;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
   ai:
     openai:
       api-key: ${OPENAI_API_KEY:${DASHSCOPE_API_KEY:placeholder-key}}
@@ -31,9 +35,24 @@ management:
         include: health,info
 
 app:
-  profile-name: base
+  features:
+    mcp-enabled: false
+    auth-enabled: false
+  models:
+    openai-id: openai-${OPENAI_CHAT_MODEL:qwen3-max-2026-01-23}
+    dashscope-id: dashscope-${DASHSCOPE_CHAT_MODEL:qwen3-max-2026-01-23}
+  dashscope:
+    chat-model: ${DASHSCOPE_CHAT_MODEL:qwen3-max-2026-01-23}
   skills:
     local-dir: skills/runtime
   chat:
     memory:
       max-messages: 20
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  type-handlers-package: com.example.aitemplate.infra.db.typehandler
+  global-config:
+    db-config:
+      id-type: input

@@ -1,0 +1,203 @@
+# ═══════════════════════════════════════════════════════════════════
+# Spring AI Template — 配置参考文件
+# ═══════════════════════════════════════════════════════════════════
+#
+# 使用方法:
+#   1. 复制此文件为 application-local.yml / application-test.yml / application-prod.yml
+#   2. 只保留需要覆盖的配置项（未列出的使用 application.yml 默认值）
+#   3. 启动时通过 --spring.profiles.active=local 激活
+#
+# 示例:
+#   mvn spring-boot:run -Dspring-boot.run.profiles=local
+#   java -jar app.jar --spring.profiles.active=prod
+#
+# 环境变量优先级高于 yml 中的默认值。敏感信息（API Key、密码）建议用环境变量。
+#
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 服务端口
+# ═══════════════════════════════════════════════════════════════════
+
+server:
+  port: 8080
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 数据库
+# ═══════════════════════════════════════════════════════════════════
+# 默认: H2 内存数据库（开发用，重启数据丢失）
+# 生产: 切换为 MySQL / PostgreSQL
+
+spring:
+  datasource:
+    # --- H2 内存数据库（默认，开发用）---
+    url: jdbc:h2:mem:aimemory;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+
+    # --- MySQL（自动建库，无需手动 CREATE DATABASE）---
+    # url: jdbc:mysql://localhost:3306/ai_template?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    # username: ${DB_USERNAME:root}
+    # password: ${DB_PASSWORD:}
+    # driver-class-name: com.mysql.cj.jdbc.Driver
+
+    # --- PostgreSQL ---
+    # url: jdbc:postgresql://localhost:5432/ai_template
+    # username: ${DB_USERNAME:postgres}
+    # password: ${DB_PASSWORD:}
+    # driver-class-name: org.postgresql.Driver
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Flyway 数据库版本管理
+# ═══════════════════════════════════════════════════════════════════
+# 迁移脚本位于 resources/db/migration/
+# baseline-on-migrate: 首次在已有数据库上启用 Flyway 时，自动标记基线
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true                # 兼容从无 Flyway 的数据库迁移
+    locations: classpath:db/migration
+
+
+# ═══════════════════════════════════════════════════════════════════
+# AI 模型配置
+# ═══════════════════════════════════════════════════════════════════
+# 底层使用 Spring AI 的 OpenAI 兼容协议。
+# DashScope（通义千问）通过 OpenAI 兼容接口接入。
+#
+# API Key 优先级: 页面设置（数据库） > 环境变量 > yml 配置
+# 环境变量: DASHSCOPE_API_KEY, OPENAI_API_KEY
+
+  ai:
+    openai:
+      # API Key: 优先读环境变量 OPENAI_API_KEY, 其次 DASHSCOPE_API_KEY
+      api-key: ${OPENAI_API_KEY:${DASHSCOPE_API_KEY:placeholder-key}}
+
+      # 基础 URL:
+      #   DashScope（默认）: https://dashscope.aliyuncs.com/compatible-mode
+      #   OpenAI 官方:       https://api.openai.com
+      #   自定义兼容端点:     https://your-proxy.com/v1
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+
+      chat:
+        options:
+          # Spring AI 内置 ChatModel 使用的模型名
+          # DashScope 可选: qwen-turbo, qwen-plus, qwen-max, qwen3-max-2026-01-23
+          # OpenAI 可选:    gpt-4o, gpt-4o-mini, gpt-3.5-turbo
+          model: ${OPENAI_CHAT_MODEL:qwen3-max-2026-01-23}
+
+    # 对话记忆（JDBC 持久化）
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: always        # always: 每次启动自动建表; never: 手动管理
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 功能开关
+# ═══════════════════════════════════════════════════════════════════
+
+app:
+  features:
+    mcp-enabled: false                       # true: 启用 MCP 工具/技能（McpTimeToolAdapter 等）
+    auth-enabled: false                      # true: 启用 Spring Security 认证（预留）
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 内置模型 ID
+# ═══════════════════════════════════════════════════════════════════
+# 这些 ID 用于前端展示和 ChatService 路由。
+# 动态模型通过管理页面添加，不需要在此配置。
+
+  models:
+    openai-id: openai-${OPENAI_CHAT_MODEL:qwen3-max-2026-01-23}       # OpenAiModelAdapter 的模型 ID
+    dashscope-id: dashscope-${DASHSCOPE_CHAT_MODEL:qwen3-max-2026-01-23}  # DashScopeModelAdapter 的模型 ID
+
+  dashscope:
+    chat-model: ${DASHSCOPE_CHAT_MODEL:qwen3-max-2026-01-23}          # DashScope SDK 直连使用的模型名
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 对话记忆 & Skills
+# ═══════════════════════════════════════════════════════════════════
+
+  chat:
+    memory:
+      max-messages: 20                       # 每次对话保留的最大历史消息数
+
+  skills:
+    local-dir: skills/runtime                # 本地 Skill 脚本目录
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Actuator 监控端点
+# ═══════════════════════════════════════════════════════════════════
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info                 # 生产环境可加: prometheus,metrics
+
+
+# ═══════════════════════════════════════════════════════════════════
+# MyBatis-Plus
+# ═══════════════════════════════════════════════════════════════════
+# 一般无需修改
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  type-handlers-package: com.example.aitemplate.infra.db.typehandler
+  global-config:
+    db-config:
+      id-type: input
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 配置示例: 典型 Profile
+# ═══════════════════════════════════════════════════════════════════
+#
+# --- application-local.yml（本地开发，MySQL + MCP）---
+#
+# spring:
+#   datasource:
+#     url: jdbc:mysql://localhost:3306/ai_template?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+#     username: root
+#     password: 123456
+#     driver-class-name: com.mysql.cj.jdbc.Driver
+# app:
+#   features:
+#     mcp-enabled: true
+#
+#
+# --- application-test.yml（测试环境）---
+#
+# spring:
+#   datasource:
+#     url: jdbc:mysql://test-db:3306/ai_template_test?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+#     username: ${DB_USERNAME}
+#     password: ${DB_PASSWORD}
+#     driver-class-name: com.mysql.cj.jdbc.Driver
+#
+#
+# --- application-prod.yml（生产环境）---
+#
+# server:
+#   port: 80
+# spring:
+#   datasource:
+#     url: jdbc:mysql://${DB_HOST}:3306/${DB_NAME}?useSSL=true&serverTimezone=UTC
+#     username: ${DB_USERNAME}
+#     password: ${DB_PASSWORD}
+#     driver-class-name: com.mysql.cj.jdbc.Driver
+# app:
+#   features:
+#     auth-enabled: true
+# management:
+#   endpoints:
+#     web:
+#       exposure:
+#         include: health,info,prometheus,metrics

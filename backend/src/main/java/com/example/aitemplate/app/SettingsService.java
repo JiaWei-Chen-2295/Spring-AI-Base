@@ -1,7 +1,7 @@
 package com.example.aitemplate.app;
 
 import com.example.aitemplate.infra.db.AppSettingsRepository;
-import com.example.aitemplate.infra.db.AppSettingsRepository.SettingEntry;
+import com.example.aitemplate.core.model.SettingEntry;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

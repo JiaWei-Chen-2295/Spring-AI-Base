@@ -17,10 +17,12 @@ import com.example.aitemplate.core.tool.ToolAdapter;
 import com.example.aitemplate.core.tool.ToolCommand;
 import com.example.aitemplate.core.tool.ToolResult;
 import com.example.aitemplate.core.tool.ToolRiskLevel;
+import com.example.aitemplate.infra.db.ModelConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import reactor.core.publisher.Flux;
@@ -59,11 +61,19 @@ class ChatServiceTest {
         when(tool.riskLevel()).thenReturn(ToolRiskLevel.READ);
         when(tool.invoke(any(ToolCommand.class))).thenReturn(new ToolResult("Mock weather for Beijing: sunny, 26C"));
 
+        ModelConfigRepository mockModelConfigRepo = Mockito.mock(ModelConfigRepository.class);
+        when(mockModelConfigRepo.findAll()).thenReturn(List.of());
+
+        ChatMemory mockMemory = Mockito.mock(ChatMemory.class);
+        when(mockMemory.get(any())).thenReturn(List.of());
+
         ChatService chatService = new ChatService(
-                new ModelRegistry(List.of(model)),
+                new ModelRegistry(List.of(model), mockModelConfigRepo),
                 new ToolRegistry(List.of(tool)),
                 new SkillRegistry(List.of(skill), "target/test-skills-1", new ObjectMapper()),
-                nullChatModelProvider());
+                mockMemory,
+                nullChatModelProvider(),
+                "");
 
         ChatCommand command = new ChatCommand(
                 "c1",
@@ -132,11 +142,19 @@ class ChatServiceTest {
             }
         };
 
+        ModelConfigRepository mockModelConfigRepo2 = Mockito.mock(ModelConfigRepository.class);
+        when(mockModelConfigRepo2.findAll()).thenReturn(List.of());
+
+        ChatMemory mockMemory2 = Mockito.mock(ChatMemory.class);
+        when(mockMemory2.get(any())).thenReturn(List.of());
+
         ChatService chatService = new ChatService(
-                new ModelRegistry(List.of(model)),
+                new ModelRegistry(List.of(model), mockModelConfigRepo2),
                 new ToolRegistry(List.of(tool)),
                 new SkillRegistry(List.of(), "target/test-skills-2", new ObjectMapper()),
-                nullChatModelProvider());
+                mockMemory2,
+                nullChatModelProvider(),
+                "");
 
         List<String> chunks = chatService.stream(new ChatCommand(
                 "c1",
