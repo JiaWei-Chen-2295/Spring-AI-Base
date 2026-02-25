@@ -294,7 +294,8 @@ EOF
 | Backend | Spring Boot 3.5.9, Spring AI 1.1.2, Spring AI Alibaba 1.1.2.0 |
 | ORM | MyBatis-Plus 3.5.16 |
 | Migration | Flyway |
-| Frontend | React 19, Vite 7, Ant Design 5, Zustand |
+| Web Frontend | React 19, Vite 7, Ant Design 5, Zustand |
+| Desktop/Mobile Client | Kotlin Multiplatform (KMP), Compose Multiplatform, Voyager, Koin, Ktor |
 | Database | H2 (default) / MySQL / PostgreSQL |
 | AI Models | OpenAI, DashScope, Local Mock |
 | Agent | SAA ReactAgent + SkillsAgentHook |
