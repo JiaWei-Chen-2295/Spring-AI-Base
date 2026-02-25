@@ -1,5 +1,7 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Tag } from 'antd';
+import { BookOutlined } from '@ant-design/icons';
 import { formatTime } from '../utils/format';
 import ToolCallCard from './ToolCallCard';
 
@@ -17,6 +19,17 @@ export default function MessageBubble({ msg, isLatest, sending }) {
           <span className="msg-role-label">{isUser ? 'You' : 'Assistant'}</span>
           {msg.ts && <span className="msg-time">{formatTime(msg.ts)}</span>}
         </div>
+
+        {!isUser && msg.appliedSkills && msg.appliedSkills.length > 0 && (
+          <div className="skill-applied-row">
+            <BookOutlined className="skill-applied-icon" />
+            {msg.appliedSkills.map((s) => (
+              <Tag key={s.name} color="gold" style={{ fontSize: 11, margin: '0 4px 0 0' }}>
+                {s.name}
+              </Tag>
+            ))}
+          </div>
+        )}
 
         {!isUser && msg.toolCalls && msg.toolCalls.length > 0 && (
           <ToolCallCard toolCalls={msg.toolCalls} />

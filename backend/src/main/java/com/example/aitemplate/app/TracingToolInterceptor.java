@@ -19,9 +19,15 @@ class TracingToolInterceptor extends ToolInterceptor {
     private static final Logger log = LoggerFactory.getLogger(TracingToolInterceptor.class);
 
     private final List<ToolCallInfo> traces;
+    private final ToolCallListener listener;
 
     TracingToolInterceptor(List<ToolCallInfo> traces) {
+        this(traces, null);
+    }
+
+    TracingToolInterceptor(List<ToolCallInfo> traces, ToolCallListener listener) {
         this.traces = traces;
+        this.listener = listener;
     }
 
     static List<ToolCallInfo> newTraceList() {
@@ -37,26 +43,47 @@ class TracingToolInterceptor extends ToolInterceptor {
     public ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler) {
         String toolName = request.getToolName();
         String input = request.getArguments();
-        log.info("[ToolCall] START  tool={}, input={}", toolName, truncate(input, 200));
         long start = System.currentTimeMillis();
+        log.info("[ToolCall] START  tool={}, input={}", toolName, truncate(input, 200));
+        if (listener != null) {
+            listener.onStart(toolName, input, start);
+        }
         try {
             ToolCallResponse response = handler.call(request);
             long duration = System.currentTimeMillis() - start;
             String output = response.getResult();
             if (response.isError()) {
                 log.warn("[ToolCall] ERROR  tool={}, duration={}ms, error={}", toolName, duration, truncate(output, 300));
-                traces.add(new ToolCallInfo(toolName, input, "ERROR: " + output, duration));
+                ToolCallInfo info = new ToolCallInfo(toolName, input, "ERROR: " + output, duration);
+                traces.add(info);
+                if (listener != null) {
+                    listener.onFinish(info, true);
+                }
             } else {
                 log.info("[ToolCall] FINISH tool={}, duration={}ms, output={}", toolName, duration, truncate(output, 300));
-                traces.add(new ToolCallInfo(toolName, input, output, duration));
+                ToolCallInfo info = new ToolCallInfo(toolName, input, output, duration);
+                traces.add(info);
+                if (listener != null) {
+                    listener.onFinish(info, false);
+                }
             }
             return response;
         } catch (Exception ex) {
             long duration = System.currentTimeMillis() - start;
             log.error("[ToolCall] EXCEPTION tool={}, duration={}ms, error={}", toolName, duration, ex.getMessage());
-            traces.add(new ToolCallInfo(toolName, input, "EXCEPTION: " + ex.getMessage(), duration));
+            ToolCallInfo info = new ToolCallInfo(toolName, input, "EXCEPTION: " + ex.getMessage(), duration);
+            traces.add(info);
+            if (listener != null) {
+                listener.onFinish(info, true);
+            }
             throw ex;
         }
+    }
+
+    interface ToolCallListener {
+        void onStart(String toolName, String input, long startedAt);
+
+        void onFinish(ToolCallInfo info, boolean isError);
     }
 
     private static String truncate(String s, int max) {

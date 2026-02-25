@@ -70,6 +70,14 @@ public class ChatController {
                         String json = item.substring("TOOL_CALL:".length());
                         return ServerSentEvent.builder((Object) json).event("tool_call").build();
                     }
+                    if (item.startsWith("TOOL_CALL_PROGRESS:")) {
+                        String json = item.substring("TOOL_CALL_PROGRESS:".length());
+                        return ServerSentEvent.builder((Object) json).event("tool_call_progress").build();
+                    }
+                    if (item.startsWith("SKILL_APPLY:")) {
+                        String json = item.substring("SKILL_APPLY:".length());
+                        return ServerSentEvent.builder((Object) json).event("skill_apply").build();
+                    }
                     return ServerSentEvent.builder((Object) new TokenPayload(item)).event("token").build();
                 });
 

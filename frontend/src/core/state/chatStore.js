@@ -80,6 +80,17 @@ export const useChatStore = create((set, get) => ({
       messages: [...state.messages, { role: 'assistant', content: '', ts: Date.now(), toolCalls: [] }],
     })),
 
+  /** Attach applied skills to the last assistant message */
+  setAppliedSkills: (skills) =>
+    set((state) => {
+      if (!state.messages.length) return state;
+      const next = [...state.messages];
+      const last = next[next.length - 1];
+      if (last.role !== 'assistant') return state;
+      next[next.length - 1] = { ...last, appliedSkills: skills };
+      return { messages: next };
+    }),
+
   /** Append a tool_call trace to the last assistant message's toolCalls array */
   addToolCall: (toolCall) =>
     set((state) => {
@@ -89,6 +100,24 @@ export const useChatStore = create((set, get) => ({
       if (last.role !== 'assistant') return state;
       const updatedCalls = [...(last.toolCalls || []), toolCall];
       next[next.length - 1] = { ...last, toolCalls: updatedCalls };
+      return { messages: next };
+    }),
+
+  /** Upsert live tool progress by callId on the last assistant message */
+  upsertToolCallProgress: (progress) =>
+    set((state) => {
+      if (!state.messages.length) return state;
+      const next = [...state.messages];
+      const last = next[next.length - 1];
+      if (last.role !== 'assistant') return state;
+      const toolCalls = [...(last.toolCalls || [])];
+      const idx = toolCalls.findIndex((tc) => tc.callId && tc.callId === progress.callId);
+      if (idx >= 0) {
+        toolCalls[idx] = { ...toolCalls[idx], ...progress };
+      } else {
+        toolCalls.push(progress);
+      }
+      next[next.length - 1] = { ...last, toolCalls };
       return { messages: next };
     }),
 

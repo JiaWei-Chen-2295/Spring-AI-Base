@@ -10,20 +10,19 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SkillRegistry {
 
-    private static final Pattern SKILL_SH_PATTERN = Pattern.compile(
-            "^(add_skill|register_skill|skill_add)\\s+\"([^\"]+)\"(?:\\s+\"([^\"]+)\")?\\s+<<['\"]?([A-Za-z0-9_]+)['\"]?\\s*$");
+    private static final Logger log = LoggerFactory.getLogger(SkillRegistry.class);
 
     private final Map<String, SkillProvider> builtinProviders;
     private final Map<String, SkillProvider> dynamicProviders;
@@ -41,6 +40,8 @@ public class SkillRegistry {
         for (SkillProvider provider : providers) {
             this.builtinProviders.put(key(provider.skillName(), provider.version()), provider);
         }
+        log.info("[Skill] Registered {} builtin skill(s): {}", builtinProviders.size(),
+                builtinProviders.values().stream().map(p -> p.skillName() + "@" + p.version()).toList());
         loadDynamicProvidersFromDisk();
     }
 
@@ -67,10 +68,14 @@ public class SkillRegistry {
         if (skillRefs == null || skillRefs.isEmpty()) {
             return List.of();
         }
-        return skillRefs.stream()
+        List<SkillProvider> resolved = skillRefs.stream()
                 .map(this::resolveOne)
                 .filter(provider -> provider != null)
                 .toList();
+        log.debug("[Skill] Resolved {}/{} skill refs: {}",
+                resolved.size(), skillRefs.size(),
+                resolved.stream().map(p -> p.skillName() + "@" + p.version()).toList());
+        return resolved;
     }
 
     public SkillProvider upsertDynamic(String skillName, String version, String content) {
@@ -85,6 +90,7 @@ public class SkillRegistry {
         SkillProvider provider = new DynamicSkillProvider(safeName, safeVersion, content);
         dynamicProviders.put(key(safeName, safeVersion), provider);
         persistDynamicSkill(provider);
+        log.info("[Skill] Saved dynamic skill: {}@{}, contentLength={}", safeName, safeVersion, content.length());
         return provider;
     }
 
@@ -100,6 +106,7 @@ public class SkillRegistry {
                     SkillProvider provider = dynamicProviders.remove(k);
                     if (provider != null) {
                         deleteDynamicSkillFiles(provider.skillName(), provider.version());
+                        log.info("[Skill] Deleted dynamic skill: {}@{}", provider.skillName(), provider.version());
                     }
                     removed = true;
                 }
@@ -109,67 +116,10 @@ public class SkillRegistry {
         SkillProvider removed = dynamicProviders.remove(key(skillName.trim(), version.trim()));
         if (removed != null) {
             deleteDynamicSkillFiles(removed.skillName(), removed.version());
+            log.info("[Skill] Deleted dynamic skill: {}@{}", removed.skillName(), removed.version());
             return true;
         }
         return false;
-    }
-
-    public SkillImportResult importFromSkillsSh(String script) {
-        if (script == null || script.isBlank()) {
-            return new SkillImportResult(0, List.of("skills.sh content is empty"));
-        }
-        List<String> errors = new ArrayList<>();
-        int imported = 0;
-
-        String[] lines = script.replace("\r\n", "\n").replace('\r', '\n').split("\n", -1);
-        int i = 0;
-        while (i < lines.length) {
-            String line = lines[i];
-            Matcher matcher = SKILL_SH_PATTERN.matcher(line.trim());
-            if (!matcher.matches()) {
-                i++;
-                continue;
-            }
-
-            String rawName = matcher.group(2);
-            String rawVersion = matcher.group(3);
-            String delimiter = matcher.group(4);
-            NameVersion nameVersion = parseNameVersion(rawName, rawVersion);
-
-            StringBuilder content = new StringBuilder();
-            i++;
-            boolean foundEnd = false;
-            while (i < lines.length) {
-                String next = lines[i];
-                if (next.trim().equals(delimiter)) {
-                    foundEnd = true;
-                    break;
-                }
-                if (content.length() > 0) {
-                    content.append('\n');
-                }
-                content.append(next);
-                i++;
-            }
-            if (!foundEnd) {
-                errors.add("Missing heredoc end marker: " + delimiter + " for " + rawName);
-                break;
-            }
-
-            try {
-                upsertDynamic(nameVersion.name(), nameVersion.version(), content.toString());
-                imported++;
-            }
-            catch (Exception ex) {
-                errors.add("Failed to import " + rawName + ": " + ex.getMessage());
-            }
-            i++;
-        }
-
-        if (imported == 0 && errors.isEmpty()) {
-            errors.add("No valid skill blocks found. Expected: add_skill \"name\" \"1.0.0\" <<'EOF'");
-        }
-        return new SkillImportResult(imported, errors);
     }
 
     private SkillProvider resolveOne(String skillRef) {
@@ -213,17 +163,6 @@ public class SkillRegistry {
         return version.toLowerCase(Locale.ROOT).replace("v", "");
     }
 
-    private NameVersion parseNameVersion(String rawName, String rawVersion) {
-        if (rawVersion != null && !rawVersion.isBlank()) {
-            return new NameVersion(rawName.trim(), rawVersion.trim());
-        }
-        int atIndex = rawName.lastIndexOf('@');
-        if (atIndex > 0 && atIndex < rawName.length() - 1) {
-            return new NameVersion(rawName.substring(0, atIndex).trim(), rawName.substring(atIndex + 1).trim());
-        }
-        return new NameVersion(rawName.trim(), "1.0.0");
-    }
-
     private String key(String name, String version) {
         return name + "@" + version;
     }
@@ -232,19 +171,64 @@ public class SkillRegistry {
         if (skillName == null || skillName.isBlank()) {
             return Optional.empty();
         }
-        Path dir = resolveSkillVersionDir(skillName.trim(), version);
-        if (dir == null) {
+        String name = skillName.trim();
+
+        // 1. Check skills/runtime/{name}/{version}/ — standard dynamic skill location
+        Path dir = resolveSkillVersionDir(name, version);
+        if (dir != null) {
+            // Check run.py / skill.py directly in the version dir
+            Path runPy = dir.resolve("run.py");
+            if (Files.exists(runPy)) {
+                return Optional.of(runPy);
+            }
+            Path skillPy = dir.resolve("skill.py");
+            if (Files.exists(skillPy)) {
+                return Optional.of(skillPy);
+            }
+            // Check scripts/ subdirectory (e.g. scripts/search.py)
+            Optional<Path> inScripts = findFirstPyIn(dir.resolve("scripts"));
+            if (inScripts.isPresent()) {
+                log.debug("[Skill] Found Python script for {} at {}", name, inScripts.get());
+                return inScripts;
+            }
+        }
+
+        // 2. Check skills/{name}/ and skills/{name}/scripts/ — for skills installed outside runtime/
+        Path skillsBase = localSkillRoot.getParent();
+        if (skillsBase != null) {
+            Path nameDir = skillsBase;
+            for (String seg : name.split("/")) {
+                nameDir = nameDir.resolve(sanitizePathSegment(seg));
+            }
+            Optional<Path> inScripts = findFirstPyIn(nameDir.resolve("scripts"));
+            if (inScripts.isPresent()) {
+                log.debug("[Skill] Found Python script (outside runtime) for {} at {}", name, inScripts.get());
+                return inScripts;
+            }
+            Path runPy = nameDir.resolve("run.py");
+            if (Files.exists(runPy)) {
+                return Optional.of(runPy);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<Path> findFirstPyIn(Path dir) {
+        if (!Files.exists(dir) || !Files.isDirectory(dir)) {
             return Optional.empty();
         }
-        Path runPy = dir.resolve("run.py");
-        if (Files.exists(runPy)) {
-            return Optional.of(runPy);
+        try (var stream = Files.walk(dir)) {
+            return stream.filter(p -> p.toString().endsWith(".py")).findFirst();
         }
-        Path skillPy = dir.resolve("skill.py");
-        if (Files.exists(skillPy)) {
-            return Optional.of(skillPy);
+        catch (IOException ex) {
+            return Optional.empty();
         }
-        return Optional.empty();
+    }
+
+    /** Expose the resolved absolute path for a skill version directory (for script persistence). */
+    public Path skillVersionDir(String skillName, String version) {
+        return localSkillDir(skillName, version);
     }
 
     private Path resolveSkillVersionDir(String skillName, String version) {
@@ -270,12 +254,14 @@ public class SkillRegistry {
         try {
             if (!Files.exists(localSkillRoot)) {
                 Files.createDirectories(localSkillRoot);
+                log.debug("[Skill] Created skills directory: {}", localSkillRoot);
                 return;
             }
             try (var stream = Files.walk(localSkillRoot)) {
                 stream.filter(path -> path.getFileName().toString().equals("skill.meta.json"))
                         .forEach(this::loadOneSkillMetaFile);
             }
+            log.info("[Skill] Loaded {} dynamic skill(s) from disk: {}", dynamicProviders.size(), localSkillRoot);
         }
         catch (IOException ex) {
             throw new IllegalStateException("Failed to initialize local skills directory: " + localSkillRoot, ex);
@@ -287,14 +273,16 @@ public class SkillRegistry {
             JsonSkillMeta meta = objectMapper.readValue(Files.readString(metaPath, StandardCharsets.UTF_8), JsonSkillMeta.class);
             Path contentPath = metaPath.getParent().resolve("SKILL.md");
             if (!Files.exists(contentPath)) {
+                log.warn("[Skill] Missing SKILL.md for meta at {}, skipping", metaPath);
                 return;
             }
             String content = Files.readString(contentPath, StandardCharsets.UTF_8);
             SkillProvider provider = new DynamicSkillProvider(meta.skillName(), meta.version(), content);
             dynamicProviders.put(key(provider.skillName(), provider.version()), provider);
+            log.debug("[Skill] Loaded from disk: {}@{}", meta.skillName(), meta.version());
         }
-        catch (Exception ignore) {
-            // Skip broken skill files to avoid blocking startup.
+        catch (Exception ex) {
+            log.warn("[Skill] Failed to load skill from {}: {}", metaPath, ex.getMessage());
         }
     }
 
@@ -362,10 +350,7 @@ public class SkillRegistry {
     public record SkillEntry(SkillProvider provider, String source, boolean editable) {
     }
 
-    public record SkillImportResult(int imported, List<String> errors) {
-    }
-
-    private record NameVersion(String name, String version) {
+    public record SkillImportResult(int imported, List<String> errors, List<String> skillNames) {
     }
 
     private record DynamicSkillProvider(String skillName, String version, String content) implements SkillProvider {

@@ -1,6 +1,5 @@
 package com.example.aitemplate.api.controller;
 
-import com.example.aitemplate.api.dto.SkillImportShRequest;
 import com.example.aitemplate.api.dto.SkillImportShResponse;
 import com.example.aitemplate.api.dto.SkillImportSourceRequest;
 import com.example.aitemplate.api.dto.SkillInfo;
@@ -57,15 +56,9 @@ public class SkillAdminController {
         }
     }
 
-    @PostMapping("/import-sh")
-    public SkillImportShResponse importSkillsSh(@Valid @RequestBody SkillImportShRequest request) {
-        var result = skillRegistry.importFromSkillsSh(request.script());
-        return new SkillImportShResponse(result.imported(), result.errors());
-    }
-
     @PostMapping("/import-source")
     public SkillImportShResponse importSource(@Valid @RequestBody SkillImportSourceRequest request) {
         var result = skillSourceImportService.importFromSource(request.source());
-        return new SkillImportShResponse(result.imported(), result.errors());
+        return new SkillImportShResponse(result.imported(), result.errors(), result.skillNames());
     }
 }

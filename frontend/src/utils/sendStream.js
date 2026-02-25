@@ -12,6 +12,8 @@ export function sendStream({
   skills,
   appendAssistantText,
   addToolCall,
+  upsertToolCallProgress,
+  setAppliedSkills,
   setError,
   setStreamState,
   eventSourceRef,
@@ -26,12 +28,30 @@ export function sendStream({
       setStreamState('streaming');
     });
 
+    source.addEventListener('skill_apply', (event) => {
+      try {
+        const appliedSkills = JSON.parse(event.data);
+        if (setAppliedSkills) setAppliedSkills(appliedSkills);
+      } catch (_) {
+        // ignore malformed skill_apply events
+      }
+    });
+
     source.addEventListener('tool_call', (event) => {
       try {
         const tc = JSON.parse(event.data);
         addToolCall(tc);
       } catch (_) {
         // ignore malformed tool_call events
+      }
+    });
+
+    source.addEventListener('tool_call_progress', (event) => {
+      try {
+        const tc = JSON.parse(event.data);
+        if (upsertToolCallProgress) upsertToolCallProgress(tc);
+      } catch (_) {
+        // ignore malformed tool_call_progress events
       }
     });
 

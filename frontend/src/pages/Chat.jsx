@@ -71,7 +71,9 @@ export default function Chat() {
     appendAssistantText,
     setAssistantText,
     addToolCall,
+    upsertToolCallProgress,
     setToolCalls,
+    setAppliedSkills,
     clearMessages,
   } = useChatStore();
 
@@ -159,7 +161,7 @@ export default function Chat() {
         await sendStream({
           conversationId, modelId, message,
           tools: selectedTools, skills: selectedSkills,
-          appendAssistantText, addToolCall, setError, setStreamState, eventSourceRef,
+          appendAssistantText, addToolCall, upsertToolCallProgress, setAppliedSkills, setError, setStreamState, eventSourceRef,
         });
       } else {
         const resp = await chatOnce({ conversationId, modelId, message, tools: selectedTools, skills: selectedSkills });
@@ -280,7 +282,15 @@ export default function Chat() {
                 {streamMode ? '流式' : '单次'}
               </Tag>
               <Tag color="blue" style={{ margin: 0 }}>{selectedTools.length} 工具</Tag>
-              <Tag color="gold" style={{ margin: 0 }}>{selectedSkills.length} 技能</Tag>
+              {selectedSkills.length === 0 ? (
+                <Tag style={{ margin: 0 }}>0 技能</Tag>
+              ) : (
+                selectedSkills.map((s) => (
+                  <Tag key={s} color="gold" style={{ margin: 0, fontSize: 11 }}>
+                    {s.split('/').pop().split('@')[0]}
+                  </Tag>
+                ))
+              )}
             </div>
 
             {/* Actions */}
@@ -418,7 +428,6 @@ export default function Chat() {
               { label: '会话 ID', value: conversationId },
               { label: '模式', value: streamMode ? 'SSE 流式' : '单次请求' },
               { label: '工具', value: selectedTools.join(', ') || '无' },
-              { label: '技能', value: selectedSkills.join(', ') || '无' },
             ].map((item) => (
               <div key={item.label}>
                 <Text type="secondary" style={{ fontSize: 11 }}>{item.label}</Text>
@@ -427,6 +436,18 @@ export default function Chat() {
                 </div>
               </div>
             ))}
+            <div>
+              <Text type="secondary" style={{ fontSize: 11 }}>技能</Text>
+              {selectedSkills.length === 0 ? (
+                <div><Text strong style={{ fontSize: 12 }}>无</Text></div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                  {selectedSkills.map((s) => (
+                    <Tag key={s} color="gold" style={{ fontSize: 11, margin: 0 }}>{s}</Tag>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <Divider style={{ margin: '4px 0' }} />
 
