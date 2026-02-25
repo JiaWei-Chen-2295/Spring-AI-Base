@@ -40,6 +40,7 @@
 - **React 控制台** — Ant Design 5 + Zustand，模型/工具/技能/对话/设置全可控
 - **系统设置** — API Key 通过页面配置，DB 优先、环境变量兜底
 - **插件化扩展** — `ModelAdapter` / `ToolAdapter` / `SkillProvider` 三大 SPI
+- **多端客户端** — Kotlin Multiplatform (KMP) 构建的 Compose Desktop/Android 原生体验客户端
 
 ---
 
@@ -97,6 +98,15 @@ npm run dev
 
 访问 **http://localhost:5173**，选择模型即可对话。
 
+### 4. (可选) 启动原生客户端 (KMP)
+
+本模板包含一个基于 Compose Multiplatform 的精美桌面/移动跨平台客户端：
+
+```bash
+cd kmp-client
+./gradlew :desktopApp:run
+```
+
 ---
 
 ## Chat Memory — 聊天记忆
@@ -145,9 +155,9 @@ mvn spring-boot:run -Dspring-boot.run.profiles=local
 ## Architecture
 
 ```
-Frontend (React 19 + Ant Design + Zustand)
-  ├─ ModelSelector / ToolsPanel / SkillsPanel / ChatWindow
-  └─ SSE Client (streaming + tool_call events)
+Clients
+  ├─ Web Frontend (React 19 + Ant Design + Zustand)
+  └─ KMP Client (Compose Desktop / Android + Voyager + Koin)
             |
             v
 Backend (Spring Boot 3.5 + Spring AI 1.1)
@@ -218,6 +228,11 @@ frontend/
   src/core/      # API client + Zustand state
   src/shared/    # 共享组件（MessageBubble / ToolCallCard）
   src/utils/     # 工具函数（SSE streaming / format）
+
+kmp-client/
+  composeApp/    # 共享跨平台 UI (Compose Multiplatform)
+  desktopApp/    # 桌面端打包与平台入口
+  androidApp/    # 安卓端打包与平台入口
 
 docs/
   photos/        # 截图
