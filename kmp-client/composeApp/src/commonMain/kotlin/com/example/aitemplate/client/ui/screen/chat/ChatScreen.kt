@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
@@ -27,6 +28,8 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.aitemplate.client.ui.component.StreamStatusIndicator
+import com.example.aitemplate.client.ui.screen.auth.LoginScreen
+import com.example.aitemplate.client.ui.screen.profile.ProfileScreen
 import com.example.aitemplate.client.ui.screen.settings.SettingsScreen
 import com.example.aitemplate.client.ui.theme.*
 
@@ -37,10 +40,18 @@ class ChatScreen : Screen {
         val screenModel = koinScreenModel<ChatScreenModel>()
         val navigator = LocalNavigator.currentOrThrow
         val streamState by screenModel.streamState.collectAsState()
+        val username by screenModel.username.collectAsState()
 
         LaunchedEffect(Unit) {
             screenModel.loadMetadata()
             screenModel.loadConversations()
+        }
+
+        // Check if logged out (username becomes null)
+        LaunchedEffect(username) {
+            if (username == null) {
+                navigator.replaceAll(LoginScreen())
+            }
         }
 
         MainLayout(screenModel, streamState, onSettings = { navigator.push(SettingsScreen()) })
@@ -99,13 +110,7 @@ private fun MainLayout(
                         }
                     },
                     actions = {
-                        IconButton(onClick = onSettings) {
-                            Icon(
-                                Icons.Default.Settings,
-                                contentDescription = "Settings",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
+                        UserMenu(screenModel, onSettings = onSettings)
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background,
@@ -513,4 +518,90 @@ private fun ConfigPanel(screenModel: ChatScreenModel, onClose: (() -> Unit)? = n
         onSwitchConversation  = { screenModel.switchConversation(it); onClose?.invoke() },
         onDeleteConversation  = { screenModel.deleteConversation(it) }
     )
+}
+
+// ── User menu with profile and logout options ────────────────────────────────
+@Composable
+private fun UserMenu(
+    screenModel: ChatScreenModel,
+    onSettings: () -> Unit
+) {
+    val navigator = LocalNavigator.currentOrThrow
+    var expanded by remember { mutableStateOf(false) }
+    val username by screenModel.username.collectAsState()
+
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Box(
+                modifier = androidx.compose.ui.Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = username?.firstOrNull()?.uppercase() ?: "?",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            username?.let {
+                DropdownMenuItem(
+                    text = { Text(it, fontWeight = FontWeight.Medium) },
+                    leadingIcon = {
+                        Icon(Icons.Default.Person, contentDescription = null)
+                    },
+                    onClick = { }
+                )
+            }
+
+            HorizontalDivider()
+
+            DropdownMenuItem(
+                text = { Text("Profile") },
+                leadingIcon = {
+                    Icon(Icons.Default.AccountCircle, contentDescription = null)
+                },
+                onClick = {
+                    expanded = false
+                    navigator.push(ProfileScreen())
+                }
+            )
+
+            DropdownMenuItem(
+                text = { Text("Settings") },
+                leadingIcon = {
+                    Icon(Icons.Default.Settings, contentDescription = null)
+                },
+                onClick = {
+                    expanded = false
+                    onSettings()
+                }
+            )
+
+            HorizontalDivider()
+
+            DropdownMenuItem(
+                text = { Text("Logout", color = MaterialTheme.colorScheme.error) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Logout,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                },
+                onClick = {
+                    expanded = false
+                    screenModel.logout()
+                }
+            )
+        }
+    }
 }

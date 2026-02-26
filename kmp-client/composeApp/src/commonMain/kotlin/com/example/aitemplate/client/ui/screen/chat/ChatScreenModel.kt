@@ -2,9 +2,12 @@ package com.example.aitemplate.client.ui.screen.chat
 
 import androidx.compose.runtime.*
 import cafe.adriel.voyager.core.model.ScreenModel
+import cafe.adriel.voyager.navigator.Navigator
 import com.example.aitemplate.client.data.model.*
+import com.example.aitemplate.client.data.remote.AuthApi
 import com.example.aitemplate.client.data.repository.ChatRepository
 import com.example.aitemplate.client.data.repository.MetadataRepository
+import com.example.aitemplate.client.ui.screen.auth.LoginScreen
 import com.example.aitemplate.client.ui.screen.settings.SettingsScreenModel
 import com.example.aitemplate.client.util.generateConversationId
 import com.russhwolf.settings.Settings
@@ -27,8 +30,17 @@ enum class StreamState { IDLE, CONNECTING, STREAMING, ERROR }
 class ChatScreenModel(
     private val chatRepo: ChatRepository,
     private val metadataRepo: MetadataRepository,
+    private val authApi: AuthApi,
     private val settings: Settings
 ) : ScreenModel {
+
+    // Username for display
+    private val _username = MutableStateFlow<String?>(null)
+    val username = _username.asStateFlow()
+
+    init {
+        _username.value = settings.getStringOrNull("username")
+    }
 
     private val baseUrl: String
         get() = settings.getString(SettingsScreenModel.KEY_SERVER_URL, SettingsScreenModel.DEFAULT_SERVER_URL)
@@ -267,6 +279,24 @@ class ChatScreenModel(
 
     fun dismissError() {
         error = null
+    }
+
+    fun logout() {
+        scope.launch {
+            try {
+                authApi.logout(baseUrl)
+            } catch (e: Exception) {
+                // Ignore error
+            } finally {
+                // Clear all auth data
+                settings.remove("access_token")
+                settings.remove("refresh_token")
+                settings.remove("user_id")
+                settings.remove("username")
+                _username.value = null
+                // Navigation will be handled by UI observing state change
+            }
+        }
     }
 
     override fun onDispose() {

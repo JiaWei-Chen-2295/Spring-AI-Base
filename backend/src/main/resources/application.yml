@@ -56,3 +56,14 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: input
+
+jwt:
+  secret: ai-template-jwt-secret-key-must-be-at-least-256-bits-long-for-security
+  access-token-expiration: 7200000
+  refresh-token-expiration: 604800000
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs

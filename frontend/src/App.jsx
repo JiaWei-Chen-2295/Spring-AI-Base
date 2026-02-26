@@ -6,12 +6,60 @@ import Models from './pages/Models';
 import Tools from './pages/Tools';
 import Skills from './pages/Skills';
 import Settings from './pages/Settings';
+import Login from './pages/Login';
+import Users from './pages/Users';
+import Roles from './pages/Roles';
+import { useAuthStore } from './core/state/authStore';
+
+// Auth Guard Component
+function AuthGuard({ children, requireAdmin = false }) {
+  const { isAuthenticated, isAdmin } = useAuthStore();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (requireAdmin && !isAdmin()) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return children;
+}
+
+// Public Route - redirect to dashboard if authenticated
+function PublicRoute({ children }) {
+  const { isAuthenticated } = useAuthStore();
+  
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return children;
+}
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<MainLayout />}>
+        {/* Public Routes */}
+        <Route 
+          path="/login" 
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          } 
+        />
+        
+        {/* Protected Routes */}
+        <Route 
+          path="/" 
+          element={
+            <AuthGuard>
+              <MainLayout />
+            </AuthGuard>
+          }
+        >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="chat" element={<Chat />} />
@@ -19,6 +67,24 @@ export default function App() {
           <Route path="tools" element={<Tools />} />
           <Route path="skills" element={<Skills />} />
           <Route path="settings" element={<Settings />} />
+          
+          {/* Admin Only Routes */}
+          <Route 
+            path="users" 
+            element={
+              <AuthGuard requireAdmin>
+                <Users />
+              </AuthGuard>
+            } 
+          />
+          <Route 
+            path="roles" 
+            element={
+              <AuthGuard requireAdmin>
+                <Roles />
+              </AuthGuard>
+            } 
+          />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -7,7 +7,8 @@ import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.navigator.Navigator
 import com.example.aitemplate.client.di.appModule
 import com.example.aitemplate.client.di.networkModule
-import com.example.aitemplate.client.ui.screen.settings.SettingsScreen
+import com.example.aitemplate.client.ui.screen.auth.LoginScreen
+import com.example.aitemplate.client.ui.screen.chat.ChatScreen
 import com.example.aitemplate.client.ui.theme.*
 import com.russhwolf.settings.Settings
 import org.koin.compose.KoinApplication
@@ -25,6 +26,12 @@ fun App() {
         )
     }
 
+    // Check if user is already logged in
+    val hasSavedAuth = remember {
+        settings.getStringOrNull("access_token") != null &&
+        settings.getStringOrNull("server_url") != null
+    }
+
     KoinApplication(application = {
         modules(networkModule, appModule)
     }) {
@@ -37,7 +44,12 @@ fun App() {
         ) {
             AppTheme(themeMode = themeMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    Navigator(SettingsScreen())
+                    // Navigate to Chat if logged in, otherwise show Login
+                    if (hasSavedAuth) {
+                        Navigator(ChatScreen())
+                    } else {
+                        Navigator(LoginScreen())
+                    }
                 }
             }
         }

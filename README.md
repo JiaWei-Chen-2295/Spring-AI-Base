@@ -343,3 +343,9 @@ EOF
 ## License
 
 本项目采用 [Apache License 2.0](./LICENSE) 开源协议。
+
+
+默认管理员
+用户名: admin
+密码: admin123
+角色: ADMIN

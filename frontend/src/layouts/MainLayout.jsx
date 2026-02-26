@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Layout, Menu, Avatar, Breadcrumb, Button, Badge, Space, Typography, theme } from 'antd';
+import { useState, useEffect } from 'react';
+import { Layout, Menu, Avatar, Breadcrumb, Button, Badge, Space, Typography, theme, Dropdown } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   DashboardOutlined,
@@ -12,28 +12,56 @@ import {
   UserOutlined,
   ApiOutlined,
   SettingOutlined,
+  TeamOutlined,
+  SafetyOutlined,
+  LogoutOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
+import { useAuthStore } from '../core/state/authStore';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
-const MENU_ITEMS = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: '概览' },
-  { key: '/chat', icon: <MessageOutlined />, label: 'AI 对话' },
-  { type: 'divider' },
-  {
-    key: 'resources',
-    icon: <ApiOutlined />,
-    label: '资源管理',
-    children: [
-      { key: '/models', icon: <RobotOutlined />, label: '模型管理' },
-      { key: '/tools', icon: <ToolOutlined />, label: '工具管理' },
-      { key: '/skills', icon: <BookOutlined />, label: '技能管理' },
-    ],
-  },
-  { type: 'divider' },
-  { key: '/settings', icon: <SettingOutlined />, label: '系统配置' },
-];
+const getMenuItems = (isAdmin) => {
+  const items = [
+    { key: '/dashboard', icon: <DashboardOutlined />, label: '概览' },
+    { key: '/chat', icon: <MessageOutlined />, label: 'AI 对话' },
+    { type: 'divider' },
+    {
+      key: 'resources',
+      icon: <ApiOutlined />,
+      label: '资源管理',
+      children: [
+        { key: '/models', icon: <RobotOutlined />, label: '模型管理' },
+        { key: '/tools', icon: <ToolOutlined />, label: '工具管理' },
+        { key: '/skills', icon: <BookOutlined />, label: '技能管理' },
+      ],
+    },
+  ];
+
+  // Admin only menu items
+  if (isAdmin) {
+    items.push(
+      { type: 'divider' },
+      {
+        key: 'admin',
+        icon: <SafetyOutlined />,
+        label: '系统管理',
+        children: [
+          { key: '/users', icon: <TeamOutlined />, label: '用户管理' },
+          { key: '/roles', icon: <SafetyOutlined />, label: '角色管理' },
+        ],
+      }
+    );
+  }
+
+  items.push(
+    { type: 'divider' },
+    { key: '/settings', icon: <SettingOutlined />, label: '系统配置' }
+  );
+
+  return items;
+};
 
 const BREADCRUMBS = {
   '/dashboard': [{ title: 'AI Template' }, { title: '概览' }],
@@ -42,6 +70,8 @@ const BREADCRUMBS = {
   '/tools': [{ title: 'AI Template' }, { title: '资源管理' }, { title: '工具管理' }],
   '/skills': [{ title: 'AI Template' }, { title: '资源管理' }, { title: '技能管理' }],
   '/settings': [{ title: 'AI Template' }, { title: '系统配置' }],
+  '/users': [{ title: 'AI Template' }, { title: '系统管理' }, { title: '用户管理' }],
+  '/roles': [{ title: 'AI Template' }, { title: '系统管理' }, { title: '角色管理' }],
 };
 
 export default function MainLayout() {
@@ -49,6 +79,42 @@ export default function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { token: { colorBgContainer } } = theme.useToken();
+  const { user, logout, isAdmin } = useAuthStore();
+
+  // Refresh user info on mount
+  useEffect(() => {
+    useAuthStore.getState().refreshUser();
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  const userMenuItems = [
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: user?.name || user?.username,
+      disabled: true,
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'password',
+      icon: <LockOutlined />,
+      label: '修改密码',
+      onClick: () => navigate('/settings'),
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: '退出登录',
+      onClick: handleLogout,
+      danger: true,
+    },
+  ];
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -91,8 +157,8 @@ export default function MainLayout() {
           theme="dark"
           mode="inline"
           selectedKeys={[location.pathname]}
-          defaultOpenKeys={['resources']}
-          items={MENU_ITEMS}
+          defaultOpenKeys={['resources', 'admin']}
+          items={getMenuItems(isAdmin())}
           onClick={({ key }) => navigate(key)}
           style={{ borderRight: 0, marginTop: 4 }}
         />
@@ -121,10 +187,18 @@ export default function MainLayout() {
             <Breadcrumb items={BREADCRUMBS[location.pathname] || [{ title: 'AI Template' }]} />
           </Space>
           <Space align="center" size={16}>
-            <Text type="secondary" style={{ fontSize: 12 }}>Spring AI Template</Text>
-            <Badge dot color="green" offset={[-2, 2]}>
-              <Avatar size="small" icon={<UserOutlined />} style={{ background: '#1677ff' }} />
-            </Badge>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {user?.roles?.map(r => r.roleName).join(', ')}
+            </Text>
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <Badge dot color="green" offset={[-2, 2]}>
+                <Avatar 
+                  size="small" 
+                  icon={<UserOutlined />} 
+                  style={{ background: '#1677ff', cursor: 'pointer' }} 
+                />
+              </Badge>
+            </Dropdown>
           </Space>
         </Header>
 
