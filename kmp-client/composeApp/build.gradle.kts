@@ -37,6 +37,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.components.resources)
+            implementation(compose.materialIconsExtended)
 
             // Ktor
             implementation(libs.ktor.client.core)
@@ -58,6 +59,10 @@ kotlin {
             // Settings
             implementation(libs.multiplatform.settings)
             implementation(libs.multiplatform.settings.no.arg)
+
+            // Markdown Renderer
+            implementation(libs.markdown.renderer)
+            implementation(libs.markdown.renderer.m3)
         }
 
         androidMain.dependencies {

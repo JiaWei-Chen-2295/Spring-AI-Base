@@ -5,7 +5,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+
+// ── In-app theme preference ───────────────────────────────────────────────────
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+val LocalThemeMode    = staticCompositionLocalOf { ThemeMode.SYSTEM }
+val LocalSetThemeMode = staticCompositionLocalOf<(ThemeMode) -> Unit> { {} }
 
 // ── Exact palette from frontend styles.css ───────────────────────────────────
 val BrandPrimary   = Color(0xFF111111)   // primary Black
@@ -81,9 +87,14 @@ private val DarkColors = darkColorScheme(
 
 @Composable
 fun AppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
     content: @Composable () -> Unit
 ) {
+    val darkTheme = when (themeMode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT  -> false
+        ThemeMode.DARK   -> true
+    }
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
         content = content

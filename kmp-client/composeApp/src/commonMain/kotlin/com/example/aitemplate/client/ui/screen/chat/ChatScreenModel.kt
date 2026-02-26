@@ -63,6 +63,13 @@ class ChatScreenModel(
     var error by mutableStateOf<String?>(null)
         private set
 
+    // Quote state
+    var quotedMessage by mutableStateOf<ChatMessage?>(null)
+        private set
+
+    fun setQuote(message: ChatMessage) { quotedMessage = message }
+    fun clearQuote() { quotedMessage = null }
+
     private var streamJob: Job? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -226,12 +233,14 @@ class ChatScreenModel(
         conversationId = generateConversationId()
         messages = emptyList()
         error = null
+        quotedMessage = null
     }
 
     fun switchConversation(id: String) {
         conversationId = id
         messages = emptyList()
         error = null
+        quotedMessage = null
         scope.launch {
             try {
                 val history = chatRepo.getMessages(baseUrl, id)

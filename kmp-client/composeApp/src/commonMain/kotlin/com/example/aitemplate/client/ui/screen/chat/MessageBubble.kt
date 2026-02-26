@@ -1,18 +1,35 @@
 package com.example.aitemplate.client.ui.screen.chat
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.mikepenz.markdown.m3.Markdown
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,13 +44,18 @@ fun MessageBubble(
     message: ChatMessage,
     isLatest: Boolean = false,
     sending: Boolean = false,
+    onQuote: ((ChatMessage) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val isUser = message.role == "user"
+    val clipboardManager = LocalClipboardManager.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
 
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .hoverable(interactionSource)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
@@ -78,7 +100,12 @@ fun MessageBubble(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text("📚", fontSize = 13.sp)
+                    Icon(
+                        Icons.Default.MenuBook,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = AmberDark
+                    )
                     message.appliedSkills.forEach { skill ->
                         SkillTag(skill)
                     }
@@ -110,13 +137,16 @@ fun MessageBubble(
                     isLatest && sending && message.content.isEmpty() && !isUser ->
                         ThinkingIndicator()
 
-                    message.content.isNotBlank() ->
+                    message.content.isNotBlank() && isUser ->
                         Text(
                             text = message.content,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                             lineHeight = 22.sp
                         )
+
+                    message.content.isNotBlank() ->
+                        AssistantMarkdown(content = message.content)
                 }
             }
 
@@ -124,6 +154,33 @@ fun MessageBubble(
             if (message.toolCalls.isNotEmpty()) {
                 Spacer(Modifier.height(6.dp))
                 ToolCallCard(toolCalls = message.toolCalls)
+            }
+
+            // Action bar: shown on hover when message has content
+            AnimatedVisibility(
+                visible = isHovered && message.content.isNotBlank(),
+                enter = fadeIn(),
+                exit  = fadeOut()
+            ) {
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // Copy — available for all messages
+                    MessageActionButton(
+                        icon    = Icons.Default.ContentCopy,
+                        label   = "Copy",
+                        onClick = { clipboardManager.setText(AnnotatedString(message.content)) }
+                    )
+                    // Quote — only for assistant messages
+                    if (!isUser && onQuote != null) {
+                        MessageActionButton(
+                            icon    = Icons.Default.FormatQuote,
+                            label   = "Quote",
+                            onClick = { onQuote(message) }
+                        )
+                    }
+                }
             }
         }
 
@@ -138,8 +195,8 @@ fun MessageBubble(
 private fun AvatarBadge(label: String, bg: Color) {
     Box(
         modifier = Modifier
-            .size(32.dp)
-            .background(bg, CircleShape),
+            .size(28.dp)
+            .background(bg, RoundedCornerShape(4.dp)),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -216,7 +273,52 @@ private fun ThinkingIndicator() {
     }
 }
 
+/**
+ * Renders assistant message content as Markdown (M3-styled).
+ * Extracted as a dedicated composable to avoid conditional `remember` Compose rule violations.
+ */
+@Composable
+private fun AssistantMarkdown(content: String) {
+    Markdown(
+        content = content,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
 private fun formatTimestamp(instant: Instant): String {
     val local = instant.toLocalDateTime(TimeZone.currentSystemDefault())
     return "${local.hour.toString().padStart(2, '0')}:${local.minute.toString().padStart(2, '0')}"
+}
+
+/**
+ * Compact action button shown in the hover action bar.
+ */
+@Composable
+private fun MessageActionButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 7.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        Icon(
+            icon,
+            contentDescription = label,
+            modifier = Modifier.size(12.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            label,
+            fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }

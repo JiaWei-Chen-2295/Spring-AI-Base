@@ -8,6 +8,10 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -59,7 +63,12 @@ fun ToolCallCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("⚙", fontSize = 13.sp)
+            Icon(
+                Icons.Default.Build,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.onSurface
+            )
             Text(
                 "Tool Calls",
                 fontSize = 13.sp,
@@ -126,12 +135,12 @@ private fun SingleToolCallRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Status icon
-            Text(
-                text = if (expanded) "✓" else "›",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = accent
+            // Status icon — CheckCircle when expanded, ChevronRight when collapsed
+            Icon(
+                if (expanded) Icons.Default.CheckCircle else Icons.Default.ChevronRight,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = accent
             )
 
             // Tool name

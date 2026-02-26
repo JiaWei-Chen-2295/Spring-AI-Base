@@ -2,23 +2,43 @@ package com.example.aitemplate.client
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.navigator.Navigator
 import com.example.aitemplate.client.di.appModule
 import com.example.aitemplate.client.di.networkModule
 import com.example.aitemplate.client.ui.screen.settings.SettingsScreen
-import com.example.aitemplate.client.ui.theme.AppTheme
+import com.example.aitemplate.client.ui.theme.*
+import com.russhwolf.settings.Settings
 import org.koin.compose.KoinApplication
 
 @Composable
 fun App() {
+    val settings = remember { Settings() }
+    var themeMode by remember {
+        mutableStateOf(
+            when (settings.getStringOrNull("theme_mode")) {
+                "LIGHT" -> ThemeMode.LIGHT
+                "DARK"  -> ThemeMode.DARK
+                else    -> ThemeMode.SYSTEM
+            }
+        )
+    }
+
     KoinApplication(application = {
         modules(networkModule, appModule)
     }) {
-        AppTheme {
-            Surface(modifier = Modifier.fillMaxSize()) {
-                Navigator(SettingsScreen())
+        CompositionLocalProvider(
+            LocalThemeMode provides themeMode,
+            LocalSetThemeMode provides { mode ->
+                themeMode = mode
+                settings.putString("theme_mode", mode.name)
+            }
+        ) {
+            AppTheme(themeMode = themeMode) {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    Navigator(SettingsScreen())
+                }
             }
         }
     }

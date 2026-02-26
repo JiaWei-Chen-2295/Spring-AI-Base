@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.1.21"
-compose-multiplatform = "1.7.3"
+compose-multiplatform = "1.8.0"
 agp = "8.7.3"
 ktor = "3.1.0"
 kotlinx-serialization = "1.7.3"
@@ -9,6 +9,7 @@ kotlinx-datetime = "0.6.1"
 koin = "4.0.2"
 voyager = "1.1.0-beta03"
 multiplatform-settings = "1.2.0"
+markdown-renderer = "0.35.0"
 androidx-activityCompose = "1.9.3"
 
 [libraries]
@@ -37,6 +38,10 @@ voyager-koin = { module = "cafe.adriel.voyager:voyager-koin", version.ref = "voy
 # Multiplatform Settings
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
 multiplatform-settings-no-arg = { module = "com.russhwolf:multiplatform-settings-no-arg", version.ref = "multiplatform-settings" }
+
+# Markdown Renderer
+markdown-renderer = { module = "com.mikepenz:multiplatform-markdown-renderer", version.ref = "markdown-renderer" }
+markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdown-renderer" }
 
 # AndroidX
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }

@@ -1,17 +1,23 @@
 package com.example.aitemplate.client.ui.screen.chat
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,7 +50,11 @@ class ChatScreen : Screen {
 // ── Unified Layout: single column + overlay drawer ────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MainLayout(screenModel: ChatScreenModel, streamState: StreamState, onSettings: () -> Unit) {
+private fun MainLayout(
+    screenModel: ChatScreenModel,
+    streamState: StreamState,
+    onSettings: () -> Unit
+) {
     var showDrawer by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -59,11 +69,18 @@ private fun MainLayout(screenModel: ChatScreenModel, streamState: StreamState, o
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            if (streamState.name != "IDLE" && streamState.name != "STOPPED") {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Box(modifier = Modifier.size(6.dp).background(MaterialTheme.colorScheme.secondary, androidx.compose.foundation.shape.CircleShape))
+                            if (streamState != StreamState.IDLE) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .background(MaterialTheme.colorScheme.secondary, CircleShape)
+                                    )
                                     Text(
-                                        text = streamState.name,
+                                        text = streamState.name.lowercase(),
                                         fontSize = 10.sp,
                                         fontFamily = FontFamily.Monospace,
                                         color = MaterialTheme.colorScheme.secondary
@@ -74,11 +91,21 @@ private fun MainLayout(screenModel: ChatScreenModel, streamState: StreamState, o
                     },
                     navigationIcon = {
                         IconButton(onClick = { showDrawer = true }) {
-                            Text("☰", fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Icon(
+                                Icons.Default.Menu,
+                                contentDescription = "Menu",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     },
                     actions = {
-                        IconButton(onClick = onSettings) { Text("⚙", fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface) }
+                        IconButton(onClick = onSettings) {
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background,
@@ -90,8 +117,10 @@ private fun MainLayout(screenModel: ChatScreenModel, streamState: StreamState, o
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
-            
+        Box(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentAlignment = Alignment.TopCenter
+        ) {
             // Center chat column
             Column(modifier = Modifier.fillMaxSize().widthIn(max = 840.dp)) {
                 ChatArea(screenModel, streamState, Modifier.weight(1f))
@@ -107,7 +136,9 @@ private fun MainLayout(screenModel: ChatScreenModel, streamState: StreamState, o
                     ) {
                         Column {
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -118,14 +149,24 @@ private fun MainLayout(screenModel: ChatScreenModel, streamState: StreamState, o
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 IconButton(onClick = { showDrawer = false }) {
-                                    Text("✕", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Close",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
                             HorizontalDivider()
                             ConfigPanel(screenModel, onClose = { showDrawer = false })
                         }
                     }
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight().background(Color.Black.copy(alpha = 0.2f)).clickable { showDrawer = false })
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(Color.Black.copy(alpha = 0.2f))
+                            .clickable { showDrawer = false }
+                    )
                 }
             }
         }
@@ -168,7 +209,11 @@ private fun StatCard(label: String, value: String, accent: Color, modifier: Modi
 
 // ── Chat area: messages + input ───────────────────────────────────────────────
 @Composable
-private fun ChatArea(screenModel: ChatScreenModel, streamState: StreamState, modifier: Modifier = Modifier) {
+private fun ChatArea(
+    screenModel: ChatScreenModel,
+    streamState: StreamState,
+    modifier: Modifier = Modifier
+) {
     val listState = rememberLazyListState()
 
     // Auto-scroll on new content
@@ -179,7 +224,7 @@ private fun ChatArea(screenModel: ChatScreenModel, streamState: StreamState, mod
     }
 
     Column(modifier = modifier) {
-        // Top bar: stream indicator
+        // Top bar: conversation id + stream indicator
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -213,41 +258,56 @@ private fun ChatArea(screenModel: ChatScreenModel, streamState: StreamState, mod
                     fontSize = 13.sp,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = { screenModel.dismissError() }) { Text("✕") }
+                IconButton(
+                    onClick = { screenModel.dismissError() },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Dismiss",
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
 
         // Messages
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            contentPadding = PaddingValues(vertical = 8.dp)
-        ) {
-            if (screenModel.messages.isEmpty()) {
-                item { 
-                    EmptyState(
-                        enabled = !screenModel.sending,
-                        onSelect = { screenModel.sendMessage(it) }
-                    ) 
-                }
-            } else {
-                itemsIndexed(screenModel.messages) { idx, message ->
-                    val isLatest = idx == screenModel.messages.lastIndex
-                    MessageBubble(
-                        message  = message,
-                        isLatest = isLatest,
-                        sending  = screenModel.sending
-                    )
+        SelectionContainer(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                if (screenModel.messages.isEmpty()) {
+                    item {
+                        EmptyState(
+                            enabled = !screenModel.sending,
+                            onSelect = { screenModel.sendMessage(it) }
+                        )
+                    }
+                } else {
+                    itemsIndexed(screenModel.messages) { idx, message ->
+                        val isLatest = idx == screenModel.messages.lastIndex
+                        MessageBubble(
+                            message  = message,
+                            isLatest = isLatest,
+                            sending  = screenModel.sending,
+                            onQuote  = { screenModel.setQuote(it) }
+                        )
+                    }
                 }
             }
         }
 
         // Input
         ChatInput(
-            sending   = screenModel.sending,
-            streamMode = screenModel.streamMode,
-            onSend    = { screenModel.sendMessage(it) },
-            onStop    = { screenModel.stopStream() }
+            sending       = screenModel.sending,
+            streamMode    = screenModel.streamMode,
+            onSend        = { screenModel.sendMessage(it) },
+            onStop        = { screenModel.stopStream() },
+            quotedMessage = screenModel.quotedMessage,
+            onClearQuote  = { screenModel.clearQuote() }
         )
 
         // Footer hint
@@ -276,16 +336,27 @@ private fun EmptyState(enabled: Boolean, onSelect: (String) -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(48.dp)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // Ghost logo
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Box(
                 modifier = Modifier
                     .size(64.dp)
-                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp)),
+                    .background(
+                        MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f),
+                        RoundedCornerShape(16.dp)
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Text("✦", color = MaterialTheme.colorScheme.onPrimary, fontSize = 28.sp)
+                Icon(
+                    Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
+                    modifier = Modifier.size(32.dp)
+                )
             }
-            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 "CLEAN SLATE AI",
                 style = MaterialTheme.typography.labelMedium,
@@ -296,14 +367,45 @@ private fun EmptyState(enabled: Boolean, onSelect: (String) -> Unit) {
         }
 
         // Quick prompts grid (2 cols)
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.widthIn(max = 600.dp)) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.widthIn(max = 600.dp)
+        ) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                PromptCard("📝 Summarize Text", "Please summarize the key points.", enabled, Modifier.weight(1f), onSelect)
-                PromptCard("💻 Explain Code", "Please explain step by step.", enabled, Modifier.weight(1f), onSelect)
+                PromptCard(
+                    icon    = Icons.Default.Description,
+                    label   = "Summarize Text",
+                    prompt  = "Please summarize the key points.",
+                    enabled = enabled,
+                    modifier = Modifier.weight(1f),
+                    onSelect = onSelect
+                )
+                PromptCard(
+                    icon    = Icons.Default.Code,
+                    label   = "Explain Code",
+                    prompt  = "Please explain step by step.",
+                    enabled = enabled,
+                    modifier = Modifier.weight(1f),
+                    onSelect = onSelect
+                )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                PromptCard("🐛 Debug JSON", "Debug the following JSON.", enabled, Modifier.weight(1f), onSelect)
-                PromptCard("🗄️ Generate SQL", "Generate SQL for...", enabled, Modifier.weight(1f), onSelect)
+                PromptCard(
+                    icon    = Icons.Default.BugReport,
+                    label   = "Debug JSON",
+                    prompt  = "Debug the following JSON.",
+                    enabled = enabled,
+                    modifier = Modifier.weight(1f),
+                    onSelect = onSelect
+                )
+                PromptCard(
+                    icon    = Icons.Default.Storage,
+                    label   = "Generate SQL",
+                    prompt  = "Generate SQL for...",
+                    enabled = enabled,
+                    modifier = Modifier.weight(1f),
+                    onSelect = onSelect
+                )
             }
         }
     }
@@ -311,17 +413,41 @@ private fun EmptyState(enabled: Boolean, onSelect: (String) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PromptCard(label: String, prompt: String, enabled: Boolean, modifier: Modifier, onSelect: (String) -> Unit) {
+private fun PromptCard(
+    icon: ImageVector,
+    label: String,
+    prompt: String,
+    enabled: Boolean,
+    modifier: Modifier,
+    onSelect: (String) -> Unit
+) {
     Surface(
         onClick = { if (enabled) onSelect(prompt) },
         enabled = enabled,
         shape = RoundedCornerShape(6.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         color = MaterialTheme.colorScheme.background,
         modifier = modifier.height(64.dp)
     ) {
-        Box(contentAlignment = Alignment.CenterStart, modifier = Modifier.padding(horizontal = 16.dp)) {
-            Text(label, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
+            Text(
+                label,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
@@ -340,19 +466,23 @@ private fun SnapshotPanel(screenModel: ChatScreenModel) {
             color = MaterialTheme.colorScheme.onSurface
         )
         HorizontalDivider()
-
-        SnapRow("Model",    screenModel.selectedModelId.ifBlank { "—" })
-        SnapRow("Conv",     "…${screenModel.conversationId.takeLast(8)}")
-        SnapRow("Mode",     if (screenModel.streamMode) "⚡ SSE" else "📬 Single")
-        SnapRow("Tools",    screenModel.selectedTools.joinToString("\n").ifBlank { "none" })
-        SnapRow("Skills",   screenModel.selectedSkills.joinToString("\n").ifBlank { "none" })
+        SnapRow("Model",  screenModel.selectedModelId.ifBlank { "—" })
+        SnapRow("Conv",   "…${screenModel.conversationId.takeLast(8)}")
+        SnapRow("Mode",   if (screenModel.streamMode) "SSE Stream" else "Single")
+        SnapRow("Tools",  screenModel.selectedTools.joinToString("\n").ifBlank { "none" })
+        SnapRow("Skills", screenModel.selectedSkills.joinToString("\n").ifBlank { "none" })
     }
 }
 
 @Composable
 private fun SnapRow(label: String, value: String) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.W600)
+        Text(
+            label,
+            fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.W600
+        )
         Text(
             value,
             fontSize = 11.sp,
@@ -366,21 +496,21 @@ private fun SnapRow(label: String, value: String) {
 @Composable
 private fun ConfigPanel(screenModel: ChatScreenModel, onClose: (() -> Unit)? = null) {
     ConfigPanel(
-        models               = screenModel.models,
-        tools                = screenModel.tools,
-        skills               = screenModel.skills,
-        selectedModelId      = screenModel.selectedModelId,
-        selectedTools        = screenModel.selectedTools,
-        selectedSkills       = screenModel.selectedSkills,
-        streamMode           = screenModel.streamMode,
-        conversations        = screenModel.conversations,
-        currentConversationId= screenModel.conversationId,
-        onModelSelected      = { screenModel.selectedModelId = it },
-        onToolsChanged       = { screenModel.selectedTools = it },
-        onSkillsChanged      = { screenModel.selectedSkills = it },
-        onStreamModeChanged  = { screenModel.streamMode = it },
-        onNewConversation    = { screenModel.newConversation() },
-        onSwitchConversation = { screenModel.switchConversation(it); onClose?.invoke() },
-        onDeleteConversation = { screenModel.deleteConversation(it) }
+        models                = screenModel.models,
+        tools                 = screenModel.tools,
+        skills                = screenModel.skills,
+        selectedModelId       = screenModel.selectedModelId,
+        selectedTools         = screenModel.selectedTools,
+        selectedSkills        = screenModel.selectedSkills,
+        streamMode            = screenModel.streamMode,
+        conversations         = screenModel.conversations,
+        currentConversationId = screenModel.conversationId,
+        onModelSelected       = { screenModel.selectedModelId = it },
+        onToolsChanged        = { screenModel.selectedTools = it },
+        onSkillsChanged       = { screenModel.selectedSkills = it },
+        onStreamModeChanged   = { screenModel.streamMode = it },
+        onNewConversation     = { screenModel.newConversation() },
+        onSwitchConversation  = { screenModel.switchConversation(it); onClose?.invoke() },
+        onDeleteConversation  = { screenModel.deleteConversation(it) }
     )
 }

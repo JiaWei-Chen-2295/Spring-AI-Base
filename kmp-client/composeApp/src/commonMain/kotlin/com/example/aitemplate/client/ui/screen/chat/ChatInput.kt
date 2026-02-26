@@ -4,18 +4,23 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.text.BasicTextField
 
 @Composable
 fun ChatInput(
@@ -23,9 +28,29 @@ fun ChatInput(
     streamMode: Boolean,
     onSend: (String) -> Unit,
     onStop: () -> Unit,
+    quotedMessage: ChatMessage? = null,
+    onClearQuote: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var inputText by remember { mutableStateOf("") }
+
+    // Build the final text to send, prepending markdown quote block when quoting
+    fun doSend() {
+        if (inputText.isBlank() || sending) return
+        val text = if (quotedMessage != null) {
+            val quotedLines = quotedMessage.content
+                .take(300)
+                .trimEnd()
+                .split("\n")
+                .joinToString("\n") { "> $it" }
+            "$quotedLines\n\n$inputText"
+        } else {
+            inputText
+        }
+        onSend(text)
+        inputText = ""
+        onClearQuote()
+    }
 
     Column(
         modifier = modifier
@@ -34,6 +59,46 @@ fun ChatInput(
             .widthIn(max = 768.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Quote preview bar
+        if (quotedMessage != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 6.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.secondaryContainer)
+                    .padding(horizontal = 12.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.FormatQuote,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Text(
+                    text = quotedMessage.content.take(100).replace('\n', ' '),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = onClearQuote,
+                    modifier = Modifier.size(20.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Clear quote",
+                        modifier = Modifier.size(13.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -73,10 +138,7 @@ fun ChatInput(
                                 event.key == Key.Enter &&
                                 !event.isShiftPressed
                             ) {
-                                if (inputText.isNotBlank() && !sending) {
-                                    onSend(inputText)
-                                    inputText = ""
-                                }
+                                doSend()
                                 true
                             } else false
                         },
@@ -85,6 +147,7 @@ fun ChatInput(
             }
 
             if (sending && streamMode) {
+                // Stop button
                 IconButton(
                     onClick = onStop,
                     modifier = Modifier
@@ -92,23 +155,28 @@ fun ChatInput(
                         .clip(RoundedCornerShape(8.dp))
                         .background(MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("■", color = MaterialTheme.colorScheme.onPrimary, fontSize = 16.sp)
+                    Icon(
+                        Icons.Default.Stop,
+                        contentDescription = "Stop",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             } else {
+                // Send button
                 IconButton(
                     onClick = {
-                        if (inputText.isNotBlank()) {
-                            onSend(inputText)
-                            inputText = ""
-                        }
+                        doSend()
                     },
                     enabled = inputText.isNotBlank() && !sending,
                     modifier = Modifier
                         .size(36.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(
-                            if (inputText.isNotBlank() && !sending) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.surfaceVariant
+                            if (inputText.isNotBlank() && !sending)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant
                         )
                 ) {
                     if (sending) {
@@ -118,7 +186,15 @@ fun ChatInput(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        Text("↑", color = if (inputText.isNotBlank() && !sending) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 18.sp)
+                        Icon(
+                            Icons.Default.ArrowUpward,
+                            contentDescription = "Send",
+                            tint = if (inputText.isNotBlank() && !sending)
+                                MaterialTheme.colorScheme.onPrimary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
             }
