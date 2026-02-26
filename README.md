@@ -1,13 +1,16 @@
 <h1 align="center">Spring AI Reference Project</h1>
 
 <p align="center">
-  <b>一个面向 Spring 生态的 AI 应用参考项目，提供多模型接入、工具调用和可扩展工程结构。</b>
+  <b>一个面向 Spring 生态的 AI 应用参考项目，提供多模型接入、工具调用和可扩展工程结构。</b><br/>
+  <sub>包含 React Web 控制台 + Kotlin Multiplatform 原生客户端（Desktop / Android）</sub>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F?logo=springboot&logoColor=white" alt="Spring Boot 3.5"/>
   <img src="https://img.shields.io/badge/Spring%20AI-1.1.2-6DB33F?logo=spring&logoColor=white" alt="Spring AI 1.1.2"/>
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" alt="React 19"/>
+  <img src="https://img.shields.io/badge/Kotlin-2.1-7F52FF?logo=kotlin&logoColor=white" alt="Kotlin 2.1"/>
+  <img src="https://img.shields.io/badge/Compose%20Multiplatform-1.7-4285F4?logo=jetpackcompose&logoColor=white" alt="Compose Multiplatform"/>
   <img src="https://img.shields.io/badge/Java-17+-ED8B00?logo=openjdk&logoColor=white" alt="Java 17+"/>
   <img src="https://img.shields.io/badge/License-Apache%202.0-blue" alt="License"/>
 </p>
@@ -24,6 +27,7 @@
 | 聊天记录重启就没了 | **JDBC 持久化记忆** — 默认 H2 零配置，一行改 MySQL |
 | 从零搭项目要几天 | **克隆即跑** — 30 分钟跑通模型+工具+流式输出 |
 | Function Calling 接入复杂 | **内置工具链** — SAA Agent + Skills + MCP 开箱可用 |
+| 只有 Web 端，缺少原生体验 | **KMP 跨平台客户端** — Compose Desktop/Android 原生 UI，一套代码多端运行 |
 
 ---
 
@@ -31,16 +35,18 @@
 
 - **多模型路由** — OpenAI / DashScope / DeepSeek / Ollama，按需切换，统一接口
 - **模型管理后台** — 管理员动态添加、编辑、删除、启用/禁用模型，支持任意 OpenAI 兼容 API
+- **用户认证与权限** — JWT 认证 + RBAC 权限模型，支持用户/角色管理
 - **聊天记忆** — JDBC 持久化，H2 零配置启动，配置切 MySQL/PostgreSQL
 - **数据库管理** — MyBatis-Plus ORM + Flyway 版本迁移，切换数据库零 SQL
 - **Function Calling** — SAA ReactAgent 驱动，工具自动注入，支持 Tracing
 - **Skills 系统** — 命名空间 + 版本管理 + Python 脚本执行 + `skills.sh` 批量导入
 - **MCP 能力** — 按开关启用外部 MCP 工具（搜索、文件、数据库）
 - **流式输出** — SSE 实时推送 token + 工具调用元数据
-- **React 控制台** — Ant Design 5 + Zustand，模型/工具/技能/对话/设置全可控
+- **React 控制台** — Ant Design 5 + Zustand，模型/工具/技能/对话/用户/角色全可控
 - **系统设置** — API Key 通过页面配置，DB 优先、环境变量兜底
 - **插件化扩展** — `ModelAdapter` / `ToolAdapter` / `SkillProvider` 三大 SPI
 - **多端客户端** — Kotlin Multiplatform (KMP) 构建的 Compose Desktop/Android 原生体验客户端
+- **Swagger 文档** — OpenAPI 3.0 自动生成 API 文档，访问 `/swagger-ui.html`
 
 ---
 
@@ -73,6 +79,16 @@ Skills 技能系统按需加载增强模型能力；MCP 协议接入外部工具
   <img src="docs/photos/mcp.png" width="49%" alt="MCP"/>
 </p>
 
+### KMP 原生客户端
+
+基于 Kotlin Multiplatform + Compose Multiplatform 构建的跨平台原生客户端，支持 Desktop 和 Android，提供流畅的原生 UI 体验。
+
+- 登录认证 + 用户资料管理
+- 模型/工具/技能选择
+- 流式对话 + Markdown 渲染
+- 会话历史管理
+- 亮色/暗色主题切换
+
 ---
 
 ## Quick Start
@@ -100,12 +116,14 @@ npm run dev
 
 ### 4. (可选) 启动原生客户端 (KMP)
 
-本模板包含一个基于 Compose Multiplatform 的精美桌面/移动跨平台客户端：
+本模板包含一个基于 Compose Multiplatform 的精美跨平台客户端：
 
 ```bash
 cd kmp-client
 ./gradlew :desktopApp:run
 ```
+
+> **功能特性**：登录认证、用户资料管理、模型/工具/技能选择、流式对话、Markdown 渲染、亮/暗主题
 
 ---
 
@@ -161,6 +179,9 @@ Clients
             |
             v
 Backend (Spring Boot 3.5 + Spring AI 1.1)
+  ├─ AuthController (/api/auth) — 登录/登出/刷新Token/修改密码
+  ├─ UserController (/api/users) — 用户CRUD + 角色分配
+  ├─ RoleController (/api/roles) — 角色CRUD
   ├─ ChatController (/api/chat, /api/chat/stream)
   ├─ ConversationController (/api/conversations)
   ├─ ModelAdminController (/api/admin/models) — CRUD + toggle
@@ -170,7 +191,8 @@ Backend (Spring Boot 3.5 + Spring AI 1.1)
   ├─ ToolRegistry  → ToolAdapter SPI
   ├─ SkillRegistry → builtin + dynamic skills
   ├─ ChatMemory → JdbcChatMemoryRepository → H2 / MySQL
-  └─ MyBatis-Plus + Flyway → app_settings / model_config tables
+  ├─ Security → JWT + Spring Security + RBAC
+  └─ MyBatis-Plus + Flyway → user / role / model_config tables
             |
             v
 Providers: DashScope / OpenAI / DeepSeek / Ollama / Any OpenAI-compatible
@@ -223,9 +245,9 @@ backend/
     db/typehandler/ # 自定义类型处理器
 
 frontend/
-  src/pages/     # 页面（Dashboard / Chat / Models / Tools / Skills / Settings）
-  src/layouts/   # 布局（MainLayout — 暗色侧边栏 + 面包屑）
-  src/core/      # API client + Zustand state
+  src/pages/     # 页面（Dashboard / Chat / Models / Tools / Skills / Settings / Login / Users / Roles）
+  src/layouts/   # 布局（MainLayout — 暗色侧边栏 + 面包屑 + 用户菜单）
+  src/core/      # API client + Zustand state（含 authStore 认证状态）
   src/shared/    # 共享组件（MessageBubble / ToolCallCard）
   src/utils/     # 工具函数（SSE streaming / format）
 
@@ -323,8 +345,9 @@ EOF
 - [x] Phase 1.5 — JDBC 聊天记忆 + 对话管理 API
 - [x] Phase 2 — 模型管理后台 + Skills 管理 + 动态模型配置
 - [x] Phase 2.5 — MyBatis-Plus + Flyway + 系统设置页面 + yml 精简
-- [ ] Phase 3 — MCP 插件生态 + 插件脚手架
-- [ ] Phase 4 — 鉴权 + 限流 + 审计 + 可观测 + 成本治理
+- [x] Phase 3 — 用户认证 + JWT + RBAC 权限 + 用户/角色管理
+- [ ] Phase 4 — MCP 插件生态 + 插件脚手架
+- [ ] Phase 5 — 限流 + 审计 + 可观测 + 成本治理
 
 ---
 
@@ -344,8 +367,52 @@ EOF
 
 本项目采用 [Apache License 2.0](./LICENSE) 开源协议。
 
+---
 
-默认管理员
-用户名: admin
-密码: admin123
-角色: ADMIN
+## Default Admin
+
+| 字段 | 值 |
+|---|---|
+| 用户名 | `admin` |
+| 密码 | `admin123` |
+| 角色 | `ADMIN` |
+
+> 首次启动自动创建，建议登录后立即修改密码。
+
+---
+
+## API Documentation
+
+启动后端后访问 **http://localhost:8080/swagger-ui.html** 查看完整 API 文档。
+
+### 认证 API
+
+| 接口 | 方法 | 说明 |
+|---|---|---|
+| `/api/auth/login` | POST | 用户登录，返回 JWT Token |
+| `/api/auth/logout` | POST | 用户登出 |
+| `/api/auth/refresh` | POST | 刷新 Token |
+| `/api/auth/me` | GET | 获取当前用户信息 |
+| `/api/auth/password` | PUT | 修改密码 |
+| `/api/auth/profile` | PUT | 更新个人资料 |
+
+### 用户管理 API（需 ADMIN 角色）
+
+| 接口 | 方法 | 说明 |
+|---|---|---|
+| `/api/users` | GET | 分页查询用户 |
+| `/api/users/{id}` | GET | 获取用户详情 |
+| `/api/users` | POST | 创建用户 |
+| `/api/users/{id}` | PUT | 更新用户 |
+| `/api/users/{id}` | DELETE | 删除用户 |
+| `/api/users/{id}/roles` | PUT | 分配角色 |
+
+### 角色管理 API（需 ADMIN 角色）
+
+| 接口 | 方法 | 说明 |
+|---|---|---|
+| `/api/roles` | GET | 查询所有角色 |
+| `/api/roles/{id}` | GET | 获取角色详情 |
+| `/api/roles` | POST | 创建角色 |
+| `/api/roles/{id}` | PUT | 更新角色 |
+| `/api/roles/{id}` | DELETE | 删除角色 |
