@@ -23,6 +23,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.example.aitemplate.client.i18n.LocalStrings
 import com.example.aitemplate.client.ui.screen.auth.LoginScreen
 import com.example.aitemplate.client.ui.theme.*
 
@@ -65,10 +66,10 @@ class ProfileScreen : Screen {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("User Profile") },
+                    title = { Text(LocalStrings.current.profileTitle) },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.Default.ArrowBack, contentDescription = LocalStrings.current.back)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -174,21 +175,22 @@ class ProfileScreen : Screen {
                                     modifier = Modifier.padding(16.dp),
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
+                                    val strings = LocalStrings.current
                                     Text(
-                                        "Personal Information",
+                                        strings.profilePersonalInfo,
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
 
-                                    InfoRow(Icons.Default.Email, "Email", userInfo.email ?: "Not set")
-                                    InfoRow(Icons.Default.Phone, "Phone", userInfo.phone ?: "Not set")
+                                    InfoRow(Icons.Default.Email, strings.profileEmail, userInfo.email ?: strings.notSet)
+                                    InfoRow(Icons.Default.Phone, strings.profilePhone, userInfo.phone ?: strings.notSet)
                                     InfoRow(
                                         Icons.Default.Person,
-                                        "Gender",
+                                        strings.profileGender,
                                         when (userInfo.gender) {
-                                            1 -> "Male"
-                                            2 -> "Female"
-                                            else -> "Not set"
+                                            1 -> strings.profileMale
+                                            2 -> strings.profileFemale
+                                            else -> strings.notSet
                                         }
                                     )
                                 }
@@ -204,7 +206,7 @@ class ProfileScreen : Screen {
                                     verticalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     ListItem(
-                                        headlineContent = { Text("Edit Profile") },
+                                        headlineContent = { Text(LocalStrings.current.profileEditProfile) },
                                         leadingContent = {
                                             Icon(Icons.Default.Edit, contentDescription = null)
                                         },
@@ -212,7 +214,7 @@ class ProfileScreen : Screen {
                                     )
 
                                     ListItem(
-                                        headlineContent = { Text("Change Password") },
+                                        headlineContent = { Text(LocalStrings.current.profileChangePassword) },
                                         leadingContent = {
                                             Icon(Icons.Default.Lock, contentDescription = null)
                                         },
@@ -224,7 +226,7 @@ class ProfileScreen : Screen {
                                     ListItem(
                                         headlineContent = { 
                                             Text(
-                                                "Logout",
+                                                LocalStrings.current.logout,
                                                 color = MaterialTheme.colorScheme.error
                                             ) 
                                         },
@@ -247,8 +249,8 @@ class ProfileScreen : Screen {
                 if (showLogoutConfirm) {
                     AlertDialog(
                         onDismissRequest = { showLogoutConfirm = false },
-                        title = { Text("Confirm Logout") },
-                        text = { Text("Are you sure you want to logout?") },
+                        title = { Text(LocalStrings.current.profileConfirmLogout) },
+                        text = { Text(LocalStrings.current.profileLogoutMessage) },
                         confirmButton = {
                             TextButton(
                                 onClick = {
@@ -256,12 +258,12 @@ class ProfileScreen : Screen {
                                     screenModel.logout()
                                 }
                             ) {
-                                Text("Logout", color = MaterialTheme.colorScheme.error)
+                                Text(LocalStrings.current.logout, color = MaterialTheme.colorScheme.error)
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { showLogoutConfirm = false }) {
-                                Text("Cancel")
+                                Text(LocalStrings.current.cancel)
                             }
                         }
                     )
@@ -337,13 +339,13 @@ private fun PasswordChangeDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Change Password") },
+        title = { Text(LocalStrings.current.profileChangePassword) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = oldPassword,
                     onValueChange = { oldPassword = it },
-                    label = { Text("Current Password") },
+                    label = { Text(LocalStrings.current.profileCurrentPassword) },
                     singleLine = true,
                     visualTransformation = if (showOldPassword) 
                         VisualTransformation.None 
@@ -362,7 +364,7 @@ private fun PasswordChangeDialog(
                 OutlinedTextField(
                     value = newPassword,
                     onValueChange = { newPassword = it },
-                    label = { Text("New Password") },
+                    label = { Text(LocalStrings.current.profileNewPassword) },
                     singleLine = true,
                     visualTransformation = if (showNewPassword) 
                         VisualTransformation.None 
@@ -381,7 +383,7 @@ private fun PasswordChangeDialog(
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
-                    label = { Text("Confirm New Password") },
+                    label = { Text(LocalStrings.current.profileConfirmNewPassword) },
                     singleLine = true,
                     visualTransformation = if (showNewPassword) 
                         VisualTransformation.None 
@@ -390,7 +392,7 @@ private fun PasswordChangeDialog(
                     isError = confirmPassword.isNotBlank() && !passwordMatch,
                     supportingText = {
                         if (confirmPassword.isNotBlank() && !passwordMatch) {
-                            Text("Passwords do not match", color = MaterialTheme.colorScheme.error)
+                            Text(LocalStrings.current.profilePasswordMismatch, color = MaterialTheme.colorScheme.error)
                         }
                     }
                 )
@@ -401,12 +403,12 @@ private fun PasswordChangeDialog(
                 onClick = { onConfirm(oldPassword, newPassword) },
                 enabled = canConfirm
             ) {
-                Text("Change")
+                Text(LocalStrings.current.profileChange)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(LocalStrings.current.cancel)
             }
         }
     )
@@ -425,31 +427,32 @@ private fun EditProfileDialog(
     var gender by remember { mutableIntStateOf(user.gender ?: 0) }
     var expanded by remember { mutableStateOf(false) }
 
-    val genderOptions = listOf("Not set" to 0, "Male" to 1, "Female" to 2)
+    val strings = LocalStrings.current
+    val genderOptions = listOf(strings.notSet to 0, strings.profileMale to 1, strings.profileFemale to 2)
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Profile") },
+        title = { Text(strings.profileEditProfile) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text(strings.profileName) },
                     singleLine = true
                 )
 
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Email") },
+                    label = { Text(strings.profileEmail) },
                     singleLine = true
                 )
 
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Phone") },
+                    label = { Text(strings.profilePhone) },
                     singleLine = true
                 )
 
@@ -458,10 +461,10 @@ private fun EditProfileDialog(
                     onExpandedChange = { expanded = it }
                 ) {
                     OutlinedTextField(
-                        value = genderOptions.find { it.second == gender }?.first ?: "Not set",
+                        value = genderOptions.find { it.second == gender }?.first ?: strings.notSet,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Gender") },
+                        label = { Text(strings.profileGender) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier.menuAnchor()
                     )
@@ -495,12 +498,12 @@ private fun EditProfileDialog(
                 },
                 enabled = name.isNotBlank()
             ) {
-                Text("Save")
+                Text(strings.save)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(strings.cancel)
             }
         }
     )

@@ -31,6 +31,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.example.aitemplate.client.i18n.LocalStrings
 import com.example.aitemplate.client.ui.component.StreamStatusIndicator
 import com.example.aitemplate.client.ui.screen.auth.LoginScreen
 import com.example.aitemplate.client.ui.screen.profile.ProfileScreen
@@ -83,7 +84,7 @@ private fun MainLayout(
                     title = {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = screenModel.selectedModelId.ifBlank { "Clean Slate AI" },
+                                text = screenModel.selectedModelId.ifBlank { LocalStrings.current.chatDefaultTitle },
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -112,7 +113,7 @@ private fun MainLayout(
                         IconButton(onClick = { showConfigDrawer = true }) {
                             Icon(
                                 Icons.Default.Menu,
-                                contentDescription = "Menu",
+                                contentDescription = LocalStrings.current.chatMenu,
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
@@ -193,7 +194,7 @@ private fun MainLayout(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "Configuration",
+                                LocalStrings.current.chatConfiguration,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 18.sp,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -201,7 +202,7 @@ private fun MainLayout(
                             IconButton(onClick = { showConfigDrawer = false }) {
                                 Icon(
                                     Icons.Default.Close,
-                                    contentDescription = "Close",
+                                    contentDescription = LocalStrings.current.close,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -234,7 +235,7 @@ private fun MainLayout(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "Account",
+                                LocalStrings.current.chatAccount,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 18.sp,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -242,7 +243,7 @@ private fun MainLayout(
                             IconButton(onClick = { showUserDrawer = false }) {
                                 Icon(
                                     Icons.Default.Close,
-                                    contentDescription = "Close",
+                                    contentDescription = LocalStrings.current.close,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -274,7 +275,7 @@ private fun MainLayout(
                             }
                             // Username
                             Text(
-                                text = username ?: "Unknown",
+                                text = username ?: LocalStrings.current.unknown,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -287,7 +288,7 @@ private fun MainLayout(
                         Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                             // Profile
                             ListItem(
-                                headlineContent = { Text("Profile") },
+                                headlineContent = { Text(LocalStrings.current.profile) },
                                 leadingContent = {
                                     Icon(
                                         Icons.Default.AccountCircle,
@@ -303,7 +304,7 @@ private fun MainLayout(
 
                             // Settings
                             ListItem(
-                                headlineContent = { Text("Settings") },
+                                headlineContent = { Text(LocalStrings.current.settings) },
                                 leadingContent = {
                                     Icon(
                                         Icons.Default.Settings,
@@ -324,7 +325,7 @@ private fun MainLayout(
                         ListItem(
                             headlineContent = {
                                 Text(
-                                    "Logout",
+                                    LocalStrings.current.logout,
                                     color = MaterialTheme.colorScheme.error
                                 )
                             },
@@ -360,9 +361,9 @@ private fun StatsRow(screenModel: ChatScreenModel) {
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        StatCard("Total",     total.toString(),     Color(0xFF1677FF), Modifier.weight(1f))
-        StatCard("You",       userCount.toString(),  Color(0xFF52C41A), Modifier.weight(1f))
-        StatCard("Assistant", aiCount.toString(),    Color(0xFF722ED1), Modifier.weight(1f))
+        StatCard(LocalStrings.current.chatTotal,     total.toString(),     Color(0xFF1677FF), Modifier.weight(1f))
+        StatCard(LocalStrings.current.chatYou,       userCount.toString(),  Color(0xFF52C41A), Modifier.weight(1f))
+        StatCard(LocalStrings.current.chatAssistant, aiCount.toString(),    Color(0xFF722ED1), Modifier.weight(1f))
     }
 }
 
@@ -446,7 +447,7 @@ private fun ChatArea(
                     ) {
                         Icon(
                             Icons.Default.Close,
-                            contentDescription = "Dismiss",
+                            contentDescription = LocalStrings.current.chatDismiss,
                             tint = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.size(16.dp)
                         )
@@ -541,7 +542,7 @@ private fun EmptyState(enabled: Boolean, onSelect: (String) -> Unit) {
                 )
             }
             Text(
-                "CLEAN SLATE AI",
+                LocalStrings.current.chatEmptyTitle,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.sp,
@@ -554,19 +555,20 @@ private fun EmptyState(enabled: Boolean, onSelect: (String) -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.widthIn(max = 600.dp)
         ) {
+            val strings = LocalStrings.current
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 PromptCard(
                     icon    = Icons.Default.Description,
-                    label   = "Summarize Text",
-                    prompt  = "Please summarize the key points.",
+                    label   = strings.promptSummarize,
+                    prompt  = strings.promptSummarizeText,
                     enabled = enabled,
                     modifier = Modifier.weight(1f),
                     onSelect = onSelect
                 )
                 PromptCard(
                     icon    = Icons.Default.Code,
-                    label   = "Explain Code",
-                    prompt  = "Please explain step by step.",
+                    label   = strings.promptExplainCode,
+                    prompt  = strings.promptExplainCodeText,
                     enabled = enabled,
                     modifier = Modifier.weight(1f),
                     onSelect = onSelect
@@ -575,16 +577,16 @@ private fun EmptyState(enabled: Boolean, onSelect: (String) -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 PromptCard(
                     icon    = Icons.Default.BugReport,
-                    label   = "Debug JSON",
-                    prompt  = "Debug the following JSON.",
+                    label   = strings.promptDebugJson,
+                    prompt  = strings.promptDebugJsonText,
                     enabled = enabled,
                     modifier = Modifier.weight(1f),
                     onSelect = onSelect
                 )
                 PromptCard(
                     icon    = Icons.Default.Storage,
-                    label   = "Generate SQL",
-                    prompt  = "Generate SQL for...",
+                    label   = strings.promptGenerateSql,
+                    prompt  = strings.promptGenerateSqlText,
                     enabled = enabled,
                     modifier = Modifier.weight(1f),
                     onSelect = onSelect
@@ -642,18 +644,19 @@ private fun SnapshotPanel(screenModel: ChatScreenModel) {
         modifier = Modifier.padding(14.dp).fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        val strings = LocalStrings.current
         Text(
-            "Execution Snapshot",
+            strings.chatExecutionSnapshot,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface
         )
         HorizontalDivider()
-        SnapRow("Model",  screenModel.selectedModelId.ifBlank { "—" })
-        SnapRow("Conv",   "…${screenModel.conversationId.takeLast(8)}")
-        SnapRow("Mode",   if (screenModel.streamMode) "SSE Stream" else "Single")
-        SnapRow("Tools",  screenModel.selectedTools.joinToString("\n").ifBlank { "none" })
-        SnapRow("Skills", screenModel.selectedSkills.joinToString("\n").ifBlank { "none" })
+        SnapRow(strings.chatModel,  screenModel.selectedModelId.ifBlank { "—" })
+        SnapRow(strings.chatConv,   "…${screenModel.conversationId.takeLast(8)}")
+        SnapRow(strings.chatMode,   if (screenModel.streamMode) strings.chatSseStream else strings.chatSingle)
+        SnapRow(strings.chatTools,  screenModel.selectedTools.joinToString("\n").ifBlank { strings.chatNone })
+        SnapRow(strings.chatSkills, screenModel.selectedSkills.joinToString("\n").ifBlank { strings.chatNone })
     }
 }
 

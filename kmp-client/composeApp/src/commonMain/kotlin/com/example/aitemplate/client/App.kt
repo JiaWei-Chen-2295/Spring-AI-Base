@@ -10,6 +10,7 @@ import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
 import cafe.adriel.voyager.transitions.SlideTransition
 import com.example.aitemplate.client.di.appModule
 import com.example.aitemplate.client.di.networkModule
+import com.example.aitemplate.client.i18n.*
 import com.example.aitemplate.client.ui.screen.auth.LoginScreen
 import com.example.aitemplate.client.ui.screen.chat.ChatScreen
 import com.example.aitemplate.client.ui.theme.*
@@ -30,6 +31,16 @@ fun App() {
         )
     }
 
+    // Language preference
+    var language by remember {
+        mutableStateOf(
+            when (settings.getStringOrNull("language")) {
+                "EN" -> Language.EN
+                else -> Language.ZH
+            }
+        )
+    }
+
     // Check if user is already logged in
     val hasSavedAuth = remember {
         settings.getStringOrNull("access_token") != null &&
@@ -44,7 +55,13 @@ fun App() {
             LocalSetThemeMode provides { mode ->
                 themeMode = mode
                 settings.putString("theme_mode", mode.name)
-            }
+            },
+            LocalLanguage provides language,
+            LocalSetLanguage provides { lang ->
+                language = lang
+                settings.putString("language", lang.name)
+            },
+            LocalStrings provides getStrings(language)
         ) {
             AppTheme(themeMode = themeMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {

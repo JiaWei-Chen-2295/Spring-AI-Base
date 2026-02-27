@@ -35,6 +35,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aitemplate.client.i18n.LocalStrings
 import com.example.aitemplate.client.ui.component.SkillTag
 import com.example.aitemplate.client.ui.theme.*
 import kotlinx.datetime.Instant
@@ -88,7 +89,7 @@ fun MessageBubble(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    text = if (isUser) "You" else "Assistant",
+                    text = if (isUser) LocalStrings.current.chatYou else LocalStrings.current.chatAssistant,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.W600,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -182,14 +183,14 @@ fun MessageBubble(
                     // Copy — available for all messages
                     MessageActionButton(
                         icon    = Icons.Default.ContentCopy,
-                        label   = "Copy",
+                        label   = LocalStrings.current.chatCopy,
                         onClick = { clipboardManager.setText(AnnotatedString(message.content)) }
                     )
                     // Quote — only for assistant messages
                     if (!isUser && onQuote != null) {
                         MessageActionButton(
                             icon    = Icons.Default.FormatQuote,
-                            label   = "Quote",
+                            label   = LocalStrings.current.chatQuote,
                             onClick = { onQuote(message) }
                         )
                     }

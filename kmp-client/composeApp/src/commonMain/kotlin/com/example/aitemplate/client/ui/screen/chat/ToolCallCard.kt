@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aitemplate.client.data.model.ToolCallInfo
+import com.example.aitemplate.client.i18n.LocalStrings
 import com.example.aitemplate.client.ui.theme.*
 
 fun getToolAccentColor(toolName: String): Color {
@@ -70,7 +71,7 @@ fun ToolCallCard(
                 tint = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                "Tool Calls",
+                LocalStrings.current.toolCalls,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.W600,
                 color = MaterialTheme.colorScheme.onSurface
@@ -83,7 +84,7 @@ fun ToolCallCard(
                     .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
                 Text(
-                    "${toolCalls.size} completed",
+                    LocalStrings.current.toolCompleted(toolCalls.size),
                     fontSize = 11.sp,
                     color = AccentGreen,
                     fontWeight = FontWeight.Medium
@@ -176,11 +177,11 @@ private fun SingleToolCallRow(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 if (call.input.isNotBlank()) {
-                    SectionLabel("INPUT")
+                    SectionLabel(LocalStrings.current.toolInput)
                     DarkCodeBlock(call.input.take(1000))
                 }
                 if (call.output.isNotBlank()) {
-                    SectionLabel("OUTPUT")
+                    SectionLabel(LocalStrings.current.toolOutput)
                     DarkCodeBlock(call.output.take(1000))
                 }
             }

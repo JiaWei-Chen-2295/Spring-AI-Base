@@ -21,6 +21,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aitemplate.client.i18n.LocalStrings
 
 @Composable
 fun ChatInput(
@@ -91,7 +92,7 @@ fun ChatInput(
                 ) {
                     Icon(
                         Icons.Default.Close,
-                        contentDescription = "Clear quote",
+                        contentDescription = LocalStrings.current.chatClearQuote,
                         modifier = Modifier.size(13.dp),
                         tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                     )
@@ -117,7 +118,7 @@ fun ChatInput(
             ) {
                 if (inputText.isEmpty()) {
                     Text(
-                        "Message Clean Slate AI...",
+                        LocalStrings.current.chatInputPlaceholder,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 16.sp
                     )
@@ -157,7 +158,7 @@ fun ChatInput(
                 ) {
                     Icon(
                         Icons.Default.Stop,
-                        contentDescription = "Stop",
+                        contentDescription = LocalStrings.current.chatStop,
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(18.dp)
                     )
@@ -188,7 +189,7 @@ fun ChatInput(
                     } else {
                         Icon(
                             Icons.Default.ArrowUpward,
-                            contentDescription = "Send",
+                            contentDescription = LocalStrings.current.chatSend,
                             tint = if (inputText.isNotBlank() && !sending)
                                 MaterialTheme.colorScheme.onPrimary
                             else
@@ -202,7 +203,7 @@ fun ChatInput(
 
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Clean Slate AI can make mistakes. Verify important information.",
+            text = LocalStrings.current.chatInputDisclaimer,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 11.sp
         )

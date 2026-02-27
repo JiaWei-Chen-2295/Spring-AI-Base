@@ -33,6 +33,7 @@ import com.example.aitemplate.client.data.model.ConversationInfo
 import com.example.aitemplate.client.data.model.ModelInfo
 import com.example.aitemplate.client.data.model.SkillInfo
 import com.example.aitemplate.client.data.model.ToolInfo
+import com.example.aitemplate.client.i18n.*
 import com.example.aitemplate.client.ui.component.ModelSelector
 import com.example.aitemplate.client.ui.theme.*
 import kotlinx.datetime.*
@@ -142,7 +143,10 @@ private fun TabSwitcher(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = tab.name,
+                            text = when (tab) {
+                                DrawerTab.Settings -> LocalStrings.current.configTabSettings
+                                DrawerTab.History -> LocalStrings.current.configTabHistory
+                            },
                             fontSize = 13.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                             color = if (isSelected) MaterialTheme.colorScheme.primary
@@ -178,7 +182,7 @@ private fun SettingsContent(
             .verticalScroll(rememberScrollState())
     ) {
         // ── MODEL Section ────────────────────────────────────────────────────────
-        SectionLabel("MODEL")
+        SectionLabel(LocalStrings.current.configModel)
         
         Surface(
             modifier = Modifier
@@ -197,7 +201,7 @@ private fun SettingsContent(
         }
         
         Text(
-            text = "Select the underlying inference model. Changing models will start a new session.",
+            text = LocalStrings.current.configModelHint,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
@@ -210,12 +214,12 @@ private fun SettingsContent(
         )
 
         // ── BEHAVIOR Section ─────────────────────────────────────────────────────
-        SectionLabel("BEHAVIOR")
+        SectionLabel(LocalStrings.current.configBehavior)
         
         // Stream Responses Toggle
         SettingsToggleItem(
-            title = "Stream Responses",
-            subtitle = "Typewriter effect for tokens",
+            title = LocalStrings.current.configStreamResponses,
+            subtitle = LocalStrings.current.configStreamHint,
             checked = streamMode,
             onCheckedChange = onStreamModeChanged
         )
@@ -234,14 +238,14 @@ private fun SettingsContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SectionLabel("ACTIVE TOOLS", Modifier)
+                SectionLabel(LocalStrings.current.configActiveTools, Modifier)
                 Surface(
                     shape = RoundedCornerShape(4.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                 ) {
                     Text(
-                        text = "${selectedTools.size} Enabled",
+                        text = LocalStrings.current.configEnabled(selectedTools.size),
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -268,14 +272,14 @@ private fun SettingsContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SectionLabel("SKILLS", Modifier)
+                SectionLabel(LocalStrings.current.configSkills, Modifier)
                 Surface(
                     shape = RoundedCornerShape(4.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                 ) {
                     Text(
-                        text = "${selectedSkills.size} Enabled",
+                        text = LocalStrings.current.configEnabled(selectedSkills.size),
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -303,8 +307,12 @@ private fun SettingsContent(
 
         // ── Theme Selection ──────────────────────────────────────────────────────
         Spacer(Modifier.height(16.dp))
-        SectionLabel("THEME")
+        SectionLabel(LocalStrings.current.configTheme)
         ThemeSelector()
+
+        Spacer(Modifier.height(16.dp))
+        SectionLabel(LocalStrings.current.language.uppercase())
+        LanguageSelector()
 
         Spacer(Modifier.height(80.dp))
     }
@@ -447,7 +455,7 @@ private fun ServerStatusCard() {
             )
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "Connected to Localhost",
+                    text = LocalStrings.current.configServerConnected,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
@@ -483,7 +491,7 @@ private fun ServerStatusCard() {
                             )
                     )
                     Text(
-                        text = "Online",
+                        text = LocalStrings.current.configServerOnline,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF10A27E)
@@ -505,19 +513,19 @@ private fun ThemeSelector() {
         ThemeModeButton(
             mode = ThemeMode.LIGHT,
             icon = Icons.Default.LightMode,
-            label = "Light",
+            label = LocalStrings.current.light,
             modifier = Modifier.weight(1f)
         )
         ThemeModeButton(
             mode = ThemeMode.SYSTEM,
             icon = Icons.Default.SettingsBrightness,
-            label = "System",
+            label = LocalStrings.current.system,
             modifier = Modifier.weight(1f)
         )
         ThemeModeButton(
             mode = ThemeMode.DARK,
             icon = Icons.Default.DarkMode,
-            label = "Dark",
+            label = LocalStrings.current.dark,
             modifier = Modifier.weight(1f)
         )
     }
@@ -578,6 +586,78 @@ private fun ThemeModeButton(
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// Language Selector
+// ══════════════════════════════════════════════════════════════════════════════
+@Composable
+private fun LanguageSelector() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Language.entries.forEach { lang ->
+            LanguageButton(
+                language = lang,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LanguageButton(
+    language: Language,
+    modifier: Modifier = Modifier
+) {
+    val currentLanguage = LocalLanguage.current
+    val setLanguage = LocalSetLanguage.current
+    val isSelected = currentLanguage == language
+
+    val animatedColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary
+                     else MaterialTheme.colorScheme.surface,
+        animationSpec = tween(200)
+    )
+
+    Surface(
+        onClick = { setLanguage(language) },
+        shape = RoundedCornerShape(10.dp),
+        color = animatedColor,
+        border = BorderStroke(
+            1.dp,
+            if (isSelected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+        ),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                Icons.Default.Language,
+                contentDescription = language.nativeLabel,
+                modifier = Modifier.size(18.dp),
+                tint = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                      else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                language.nativeLabel,
+                fontSize = 11.sp,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                       else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // History Tab Content
 // ══════════════════════════════════════════════════════════════════════════════
 @Composable
@@ -606,12 +686,12 @@ private fun HistoryContent(
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    "No conversations yet",
+                    LocalStrings.current.configNoConversations,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    "Start a new chat to begin",
+                    LocalStrings.current.configStartNewChat,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
@@ -678,7 +758,7 @@ private fun HistoryContent(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "New Chat",
+                    LocalStrings.current.chatNewChat,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
@@ -732,7 +812,7 @@ private fun ConversationHistoryItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Conversation ${conversation.conversationId.takeLast(8)}",
+                        text = LocalStrings.current.configConversationLabel(conversation.conversationId.takeLast(8)),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -769,7 +849,7 @@ private fun ConversationHistoryItem(
                 ) {
                     Icon(
                         Icons.Default.Close,
-                        contentDescription = "Delete",
+                        contentDescription = LocalStrings.current.delete,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
@@ -790,10 +870,11 @@ private fun Modifier.drawLeftBorder(color: Color, width: Dp) =
     }
 
 // ── Helper: Group conversations by date ──────────────────────────────────────
+@Composable
 private fun groupConversationsByDate(conversations: List<ConversationInfo>): List<Pair<String, List<ConversationInfo>>> {
     // Since ConversationInfo doesn't have date fields, just return all as single group
     return if (conversations.isNotEmpty()) {
-        listOf("CONVERSATIONS" to conversations)
+        listOf(LocalStrings.current.configConversations to conversations)
     } else {
         emptyList()
     }

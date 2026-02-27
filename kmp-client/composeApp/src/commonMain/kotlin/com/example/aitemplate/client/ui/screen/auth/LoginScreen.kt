@@ -24,6 +24,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.example.aitemplate.client.i18n.LocalStrings
 import com.example.aitemplate.client.ui.screen.chat.ChatScreen
 import com.example.aitemplate.client.ui.theme.*
 import kotlinx.coroutines.delay
@@ -83,9 +84,10 @@ class LoginScreen : Screen {
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    CompactThemeButton(ThemeMode.LIGHT, Icons.Default.LightMode, "Light")
-                    CompactThemeButton(ThemeMode.SYSTEM, Icons.Default.SettingsBrightness, "System")
-                    CompactThemeButton(ThemeMode.DARK, Icons.Default.DarkMode, "Dark")
+                    val strings = LocalStrings.current
+                    CompactThemeButton(ThemeMode.LIGHT, Icons.Default.LightMode, strings.light)
+                    CompactThemeButton(ThemeMode.SYSTEM, Icons.Default.SettingsBrightness, strings.system)
+                    CompactThemeButton(ThemeMode.DARK, Icons.Default.DarkMode, strings.dark)
                 }
 
                 // Center card
@@ -121,14 +123,14 @@ class LoginScreen : Screen {
                         Spacer(Modifier.height(24.dp))
 
                         Text(
-                            "AI Template",
+                            LocalStrings.current.loginTitle,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            "用户登录",
+                            LocalStrings.current.loginSubtitle,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -178,10 +180,10 @@ class LoginScreen : Screen {
                         OutlinedTextField(
                             value = serverUrl,
                             onValueChange = { screenModel.updateServerUrl(it) },
-                            label = { Text("服务器地址") },
+                            label = { Text(LocalStrings.current.loginServerUrl) },
                             placeholder = {
                                 Text(
-                                    "http://localhost:8080",
+                                    LocalStrings.current.loginServerUrlPlaceholder,
                                     fontFamily = FontFamily.Monospace,
                                     fontSize = 14.sp
                                 )
@@ -206,7 +208,7 @@ class LoginScreen : Screen {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "服务器: $serverUrl",
+                                LocalStrings.current.loginServerDisplay(serverUrl),
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontFamily = FontFamily.Monospace
@@ -215,7 +217,7 @@ class LoginScreen : Screen {
                                 onClick = { showServerConfig = true },
                                 modifier = Modifier.height(32.dp)
                             ) {
-                                Text("修改", fontSize = 12.sp)
+                                Text(LocalStrings.current.loginChangeServer, fontSize = 12.sp)
                             }
                         }
                         Spacer(Modifier.height(8.dp))
@@ -225,8 +227,8 @@ class LoginScreen : Screen {
                     OutlinedTextField(
                         value = username,
                         onValueChange = { screenModel.updateUsername(it) },
-                        label = { Text("用户名") },
-                        placeholder = { Text("请输入用户名") },
+                        label = { Text(LocalStrings.current.loginUsername) },
+                        placeholder = { Text(LocalStrings.current.loginUsernamePlaceholder) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
@@ -244,8 +246,8 @@ class LoginScreen : Screen {
                     OutlinedTextField(
                         value = password,
                         onValueChange = { screenModel.updatePassword(it) },
-                        label = { Text("密码") },
-                        placeholder = { Text("请输入密码") },
+                        label = { Text(LocalStrings.current.loginPassword) },
+                        placeholder = { Text(LocalStrings.current.loginPasswordPlaceholder) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
@@ -256,7 +258,7 @@ class LoginScreen : Screen {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
                                     if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    contentDescription = if (passwordVisible) "隐藏密码" else "显示密码"
+                                    contentDescription = if (passwordVisible) LocalStrings.current.loginHidePassword else LocalStrings.current.loginShowPassword
                                 )
                             }
                         },
@@ -285,7 +287,7 @@ class LoginScreen : Screen {
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
                         } else {
-                            Text("登录", fontWeight = FontWeight.Medium)
+                            Text(LocalStrings.current.loginButton, fontWeight = FontWeight.Medium)
                         }
                     }
 
@@ -293,7 +295,7 @@ class LoginScreen : Screen {
 
                     // Demo account hint
                     Text(
-                        "默认账号: admin / admin123",
+                        LocalStrings.current.loginDefaultAccount,
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )

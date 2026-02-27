@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.aitemplate.client.i18n.LocalStrings
 import com.example.aitemplate.client.ui.screen.chat.StreamState
 
 @Composable
@@ -20,10 +21,11 @@ fun StreamStatusIndicator(
     state: StreamState,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalStrings.current
     val (dotColor, label) = when (state) {
-        StreamState.CONNECTING -> Color(0xFFFFA726) to "connecting"
-        StreamState.STREAMING  -> Color(0xFF52C41A) to "streaming"
-        StreamState.ERROR      -> Color(0xFFFF4D4F) to "error"
+        StreamState.CONNECTING -> Color(0xFFFFA726) to strings.streamConnecting
+        StreamState.STREAMING  -> Color(0xFF52C41A) to strings.streamStreaming
+        StreamState.ERROR      -> Color(0xFFFF4D4F) to strings.streamError
         StreamState.IDLE       -> return
     }
 

@@ -18,6 +18,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.example.aitemplate.client.i18n.LocalStrings
 import com.example.aitemplate.client.ui.screen.chat.ChatScreen
 import com.example.aitemplate.client.ui.theme.*
 import kotlinx.coroutines.launch
@@ -55,9 +56,10 @@ class SettingsScreen : Screen {
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    CompactThemeButton(ThemeMode.LIGHT,  Icons.Default.LightMode,         "Light")
-                    CompactThemeButton(ThemeMode.SYSTEM, Icons.Default.SettingsBrightness, "System")
-                    CompactThemeButton(ThemeMode.DARK,   Icons.Default.DarkMode,           "Dark")
+                    val strings = LocalStrings.current
+                    CompactThemeButton(ThemeMode.LIGHT,  Icons.Default.LightMode,         strings.light)
+                    CompactThemeButton(ThemeMode.SYSTEM, Icons.Default.SettingsBrightness, strings.system)
+                    CompactThemeButton(ThemeMode.DARK,   Icons.Default.DarkMode,           strings.dark)
                 }
 
                 // Center card
@@ -86,14 +88,14 @@ class SettingsScreen : Screen {
                     Spacer(Modifier.height(24.dp))
 
                     Text(
-                        "AI Template Client",
+                        LocalStrings.current.settingsTitle,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "Enter Spring AI server URL",
+                        LocalStrings.current.settingsSubtitle,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -136,7 +138,7 @@ class SettingsScreen : Screen {
                             ) {
                                 CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
                                 Text(
-                                    "Testing connection...",
+                                    LocalStrings.current.settingsTestingConnection,
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -154,7 +156,7 @@ class SettingsScreen : Screen {
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    "Connected — ${result.modelCount} model(s) available",
+                                    LocalStrings.current.settingsConnected(result.modelCount),
                                     color = AccentGreen,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium
@@ -195,7 +197,7 @@ class SettingsScreen : Screen {
                         enabled = serverUrl.isNotBlank(),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("Connect", fontWeight = FontWeight.Medium)
+                        Text(LocalStrings.current.settingsConnect, fontWeight = FontWeight.Medium)
                     }
 
                     Spacer(Modifier.height(4.dp))
@@ -212,7 +214,7 @@ class SettingsScreen : Screen {
                         enabled = serverUrl.isNotBlank() && testResult !is TestResult.Testing
                     ) {
                         Text(
-                            "Test Connection",
+                            LocalStrings.current.settingsTestConnection,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                         )
                     }
