@@ -4,7 +4,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import cafe.adriel.voyager.core.annotation.ExperimentalVoyagerApi
 import cafe.adriel.voyager.navigator.Navigator
+import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
+import cafe.adriel.voyager.transitions.SlideTransition
 import com.example.aitemplate.client.di.appModule
 import com.example.aitemplate.client.di.networkModule
 import com.example.aitemplate.client.ui.screen.auth.LoginScreen
@@ -13,6 +16,7 @@ import com.example.aitemplate.client.ui.theme.*
 import com.russhwolf.settings.Settings
 import org.koin.compose.KoinApplication
 
+@OptIn(ExperimentalVoyagerApi::class)
 @Composable
 fun App() {
     val settings = remember { Settings() }
@@ -44,11 +48,15 @@ fun App() {
         ) {
             AppTheme(themeMode = themeMode) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    // Navigate to Chat if logged in, otherwise show Login
-                    if (hasSavedAuth) {
-                        Navigator(ChatScreen())
-                    } else {
-                        Navigator(LoginScreen())
+                    val startScreen = if (hasSavedAuth) ChatScreen() else LoginScreen()
+                    Navigator(
+                        screen = startScreen,
+                        disposeBehavior = NavigatorDisposeBehavior(disposeSteps = false)
+                    ) { navigator ->
+                        SlideTransition(
+                            navigator = navigator,
+                            disposeScreenAfterTransitionEnd = true
+                        )
                     }
                 }
             }

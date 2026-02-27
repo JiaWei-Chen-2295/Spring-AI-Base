@@ -1,5 +1,6 @@
 package com.example.aitemplate.client.ui.screen.auth
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -24,6 +26,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.aitemplate.client.ui.screen.chat.ChatScreen
 import com.example.aitemplate.client.ui.theme.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class LoginScreen : Screen {
@@ -42,6 +45,20 @@ class LoginScreen : Screen {
         
         var passwordVisible by remember { mutableStateOf(false) }
         var showServerConfig by remember { mutableStateOf(serverUrl.isBlank()) }
+
+        // Entrance animation
+        val headerAlpha = remember { Animatable(0f) }
+        val headerOffsetY = remember { Animatable(-30f) }
+        val formAlpha = remember { Animatable(0f) }
+
+        LaunchedEffect(Unit) {
+            // Header: fade in + slide down from top
+            launch { headerAlpha.animateTo(1f, tween(400, easing = FastOutSlowInEasing)) }
+            launch { headerOffsetY.animateTo(0f, tween(400, easing = FastOutSlowInEasing)) }
+            // Form: fade in with delay
+            delay(150)
+            launch { formAlpha.animateTo(1f, tween(350, easing = FastOutSlowInEasing)) }
+        }
 
         // Auto-navigate on login success
         LaunchedEffect(loginSuccess) {
@@ -79,37 +96,53 @@ class LoginScreen : Screen {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
-                    // Logo icon
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(14.dp)),
-                        contentAlignment = Alignment.Center
+                    // Logo + title with entrance animation
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.graphicsLayer {
+                            alpha = headerAlpha.value
+                            translationY = headerOffsetY.value * density
+                        }
                     ) {
-                        Icon(
-                            Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(26.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(14.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+
+                        Spacer(Modifier.height(24.dp))
+
+                        Text(
+                            "AI Template",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "用户登录",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
-                    Spacer(Modifier.height(24.dp))
-
-                    Text(
-                        "AI Template",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        "用户登录",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
                     Spacer(Modifier.height(32.dp))
+
+                    // Form area with delayed fade-in
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer { alpha = formAlpha.value },
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
 
                     // Error message
                     errorMessage?.let { error ->
@@ -273,6 +306,7 @@ class LoginScreen : Screen {
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
+                    } // end form Column
                 }
             }
         }

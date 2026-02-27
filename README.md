@@ -118,12 +118,32 @@ npm run dev
 
 本模板包含一个基于 Compose Multiplatform 的精美跨平台客户端：
 
+**环境要求**
+- JDK 17+
+- Gradle 8.0+
+
+**Windows**
+```powershell
+cd kmp-client
+gradle :desktopApp:run
+```
+
+**macOS / Linux**
 ```bash
 cd kmp-client
 ./gradlew :desktopApp:run
 ```
 
-> **功能特性**：登录认证、用户资料管理、模型/工具/技能选择、流式对话、Markdown 渲染、亮/暗主题
+**功能特性**
+- 登录认证 + 用户资料管理
+- 模型/工具/技能选择（抽屉式配置面板）
+- 流式对话 + Markdown 渲染
+- 会话历史管理（按时间分组）
+- 亮色/暗色主题切换
+
+**界面预览**
+- 点击左上角 **☰ 菜单** 打开配置抽屉（Settings/History 双 Tab）
+- 点击右上角 **头像** 打开用户面板（Profile/Settings/Logout）
 
 ---
 

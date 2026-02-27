@@ -26,6 +26,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -52,9 +54,20 @@ fun MessageBubble(
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
 
+    // One-shot entrance animation
+    val animAlpha = remember { Animatable(0f) }
+    val animOffsetY = remember { Animatable(20f) }
+    LaunchedEffect(Unit) {
+        launch { animAlpha.animateTo(1f, tween(300, easing = FastOutSlowInEasing)) }
+        launch { animOffsetY.animateTo(0f, tween(300, easing = FastOutSlowInEasing)) }    }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .graphicsLayer {
+                alpha = animAlpha.value
+                translationY = animOffsetY.value * density
+            }
             .hoverable(interactionSource)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start

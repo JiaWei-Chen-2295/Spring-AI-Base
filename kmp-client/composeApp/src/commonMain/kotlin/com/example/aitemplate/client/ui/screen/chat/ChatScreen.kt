@@ -1,5 +1,7 @@
 package com.example.aitemplate.client.ui.screen.chat
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,6 +13,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
@@ -32,6 +36,7 @@ import com.example.aitemplate.client.ui.screen.auth.LoginScreen
 import com.example.aitemplate.client.ui.screen.profile.ProfileScreen
 import com.example.aitemplate.client.ui.screen.settings.SettingsScreen
 import com.example.aitemplate.client.ui.theme.*
+import kotlinx.coroutines.delay
 
 class ChatScreen : Screen {
 
@@ -66,7 +71,10 @@ private fun MainLayout(
     streamState: StreamState,
     onSettings: () -> Unit
 ) {
-    var showDrawer by remember { mutableStateOf(false) }
+    val navigator = LocalNavigator.currentOrThrow
+    var showConfigDrawer by remember { mutableStateOf(false) }
+    var showUserDrawer by remember { mutableStateOf(false) }
+    val username by screenModel.username.collectAsState()
 
     Scaffold(
         topBar = {
@@ -101,7 +109,7 @@ private fun MainLayout(
                         }
                     },
                     navigationIcon = {
-                        IconButton(onClick = { showDrawer = true }) {
+                        IconButton(onClick = { showConfigDrawer = true }) {
                             Icon(
                                 Icons.Default.Menu,
                                 contentDescription = "Menu",
@@ -110,7 +118,23 @@ private fun MainLayout(
                         }
                     },
                     actions = {
-                        UserMenu(screenModel, onSettings = onSettings)
+                        // User avatar button
+                        IconButton(onClick = { showUserDrawer = true }) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = username?.firstOrNull()?.uppercase() ?: "?",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background,
@@ -131,47 +155,194 @@ private fun MainLayout(
                 ChatArea(screenModel, streamState, Modifier.weight(1f))
             }
 
-            // Drawer overlay
-            if (showDrawer) {
-                Row(modifier = Modifier.fillMaxSize()) {
-                    Surface(
-                        modifier = Modifier.fillMaxHeight().width(300.dp),
-                        shadowElevation = 16.dp,
-                        color = MaterialTheme.colorScheme.surface
-                    ) {
-                        Column {
-                            Row(
+            // Scrim overlay for both drawers
+            AnimatedVisibility(
+                visible = showConfigDrawer || showUserDrawer,
+                enter = fadeIn(tween(250)),
+                exit  = fadeOut(tween(200))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.25f))
+                        .clickable {
+                            showConfigDrawer = false
+                            showUserDrawer = false
+                        }
+                )
+            }
+
+            // Left drawer — Configuration panel
+            AnimatedVisibility(
+                visible = showConfigDrawer,
+                modifier = Modifier.align(Alignment.CenterStart),
+                enter = slideInHorizontally(tween(300)) { -it } + fadeIn(tween(300)),
+                exit  = slideOutHorizontally(tween(250)) { -it } + fadeOut(tween(200))
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxHeight().width(340.dp),
+                    shadowElevation = 16.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Configuration",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            IconButton(onClick = { showConfigDrawer = false }) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        HorizontalDivider()
+                        ConfigPanel(screenModel, onClose = { showConfigDrawer = false })
+                    }
+                }
+            }
+
+            // Right drawer — User panel
+            AnimatedVisibility(
+                visible = showUserDrawer,
+                modifier = Modifier.align(Alignment.CenterEnd),
+                enter = slideInHorizontally(tween(300)) { it } + fadeIn(tween(300)),
+                exit  = slideOutHorizontally(tween(250)) { it } + fadeOut(tween(200))
+            ) {
+                Surface(
+                    modifier = Modifier.fillMaxHeight().width(280.dp),
+                    shadowElevation = 16.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Column {
+                        // Header with close button
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Account",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            IconButton(onClick = { showUserDrawer = false }) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        HorizontalDivider()
+
+                        // User info section
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Avatar
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                    .size(72.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    "Configuration",
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    text = username?.firstOrNull()?.uppercase() ?: "?",
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimary
                                 )
-                                IconButton(onClick = { showDrawer = false }) {
+                            }
+                            // Username
+                            Text(
+                                text = username ?: "Unknown",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                        // Menu items
+                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                            // Profile
+                            ListItem(
+                                headlineContent = { Text("Profile") },
+                                leadingContent = {
                                     Icon(
-                                        Icons.Default.Close,
-                                        contentDescription = "Close",
+                                        Icons.Default.AccountCircle,
+                                        contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
+                                },
+                                modifier = Modifier.clickable {
+                                    showUserDrawer = false
+                                    navigator.push(ProfileScreen())
                                 }
-                            }
-                            HorizontalDivider()
-                            ConfigPanel(screenModel, onClose = { showDrawer = false })
+                            )
+
+                            // Settings
+                            ListItem(
+                                headlineContent = { Text("Settings") },
+                                leadingContent = {
+                                    Icon(
+                                        Icons.Default.Settings,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                modifier = Modifier.clickable {
+                                    showUserDrawer = false
+                                    onSettings()
+                                }
+                            )
                         }
+
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                        // Logout
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    "Logout",
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            },
+                            leadingContent = {
+                                Icon(
+                                    Icons.Default.Logout,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            },
+                            modifier = Modifier
+                                .clickable {
+                                    showUserDrawer = false
+                                    screenModel.logout()
+                                }
+                                .padding(vertical = 8.dp)
+                        )
                     }
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .background(Color.Black.copy(alpha = 0.2f))
-                            .clickable { showDrawer = false }
-                    )
                 }
             }
         }
@@ -221,9 +392,10 @@ private fun ChatArea(
 ) {
     val listState = rememberLazyListState()
 
-    // Auto-scroll on new content
+    // Auto-scroll on new content — debounced to avoid animation interruption
     LaunchedEffect(screenModel.messages.size, screenModel.messages.lastOrNull()?.content) {
         if (screenModel.messages.isNotEmpty()) {
+            delay(50) // tiny debounce to batch rapid SSE updates
             listState.animateScrollToItem(screenModel.messages.lastIndex)
         }
     }
@@ -246,33 +418,39 @@ private fun ChatArea(
             StreamStatusIndicator(state = streamState)
         }
 
-        // Error alert
-        screenModel.error?.let { errMsg ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
-                    .background(MaterialTheme.colorScheme.errorContainer, RoundedCornerShape(8.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    errMsg,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    fontSize = 13.sp,
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(
-                    onClick = { screenModel.dismissError() },
-                    modifier = Modifier.size(32.dp)
+        // Error alert — animated
+        AnimatedVisibility(
+            visible = screenModel.error != null,
+            enter = expandVertically(tween(250)) + fadeIn(tween(250)),
+            exit  = shrinkVertically(tween(200)) + fadeOut(tween(200))
+        ) {
+            screenModel.error?.let { errMsg ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                        .background(MaterialTheme.colorScheme.errorContainer, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Dismiss",
-                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.size(16.dp)
+                    Text(
+                        errMsg,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        fontSize = 13.sp,
+                        modifier = Modifier.weight(1f)
                     )
+                    IconButton(
+                        onClick = { screenModel.dismissError() },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Dismiss",
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
         }
@@ -520,88 +698,4 @@ private fun ConfigPanel(screenModel: ChatScreenModel, onClose: (() -> Unit)? = n
     )
 }
 
-// ── User menu with profile and logout options ────────────────────────────────
-@Composable
-private fun UserMenu(
-    screenModel: ChatScreenModel,
-    onSettings: () -> Unit
-) {
-    val navigator = LocalNavigator.currentOrThrow
-    var expanded by remember { mutableStateOf(false) }
-    val username by screenModel.username.collectAsState()
-
-    Box {
-        IconButton(onClick = { expanded = true }) {
-            Box(
-                modifier = androidx.compose.ui.Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = username?.firstOrNull()?.uppercase() ?: "?",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            username?.let {
-                DropdownMenuItem(
-                    text = { Text(it, fontWeight = FontWeight.Medium) },
-                    leadingIcon = {
-                        Icon(Icons.Default.Person, contentDescription = null)
-                    },
-                    onClick = { }
-                )
-            }
-
-            HorizontalDivider()
-
-            DropdownMenuItem(
-                text = { Text("Profile") },
-                leadingIcon = {
-                    Icon(Icons.Default.AccountCircle, contentDescription = null)
-                },
-                onClick = {
-                    expanded = false
-                    navigator.push(ProfileScreen())
-                }
-            )
-
-            DropdownMenuItem(
-                text = { Text("Settings") },
-                leadingIcon = {
-                    Icon(Icons.Default.Settings, contentDescription = null)
-                },
-                onClick = {
-                    expanded = false
-                    onSettings()
-                }
-            )
-
-            HorizontalDivider()
-
-            DropdownMenuItem(
-                text = { Text("Logout", color = MaterialTheme.colorScheme.error) },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Logout,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                },
-                onClick = {
-                    expanded = false
-                    screenModel.logout()
-                }
-            )
-        }
-    }
-}
+// UserMenu has been integrated into MainLayout as a right-side drawer panel
