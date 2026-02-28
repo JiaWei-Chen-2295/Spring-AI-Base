@@ -1,5 +1,6 @@
 package com.example.aitemplate.api.controller;
 
+import com.example.aitemplate.core.PublicApi;
 import com.example.aitemplate.api.dto.ChangePasswordRequest;
 import com.example.aitemplate.api.dto.LoginRequest;
 import com.example.aitemplate.api.dto.LoginResponse;
@@ -47,6 +48,7 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "登录成功"),
             @ApiResponse(responseCode = "401", description = "用户名或密码错误")
     })
+    @PublicApi
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
@@ -70,6 +72,7 @@ public class AuthController {
     }
 
     @Operation(summary = "用户登出", description = "登出当前用户（客户端需清除Token）")
+    @PublicApi
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() {
         SecurityContextHolder.clearContext();
@@ -77,6 +80,7 @@ public class AuthController {
     }
 
     @Operation(summary = "刷新Token", description = "使用RefreshToken获取新的AccessToken")
+    @PublicApi
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponse> refresh(@RequestBody String refreshToken) {
         if (!tokenProvider.validateToken(refreshToken)) {

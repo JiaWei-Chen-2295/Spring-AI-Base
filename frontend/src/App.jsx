@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import Dashboard from './pages/Dashboard';
@@ -13,47 +14,58 @@ import { useAuthStore } from './core/state/authStore';
 
 // Auth Guard Component
 function AuthGuard({ children, requireAdmin = false }) {
-  const { isAuthenticated, isAdmin } = useAuthStore();
-  
+  const { isAuthenticated, authRequired, isAdmin } = useAuthStore();
+
+  // When auth is not required, let everyone through
+  if (!authRequired) {
+    return children;
+  }
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  
+
   if (requireAdmin && !isAdmin()) {
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return children;
 }
 
-// Public Route - redirect to dashboard if authenticated
+// Public Route - redirect to dashboard if authenticated (or auth disabled)
 function PublicRoute({ children }) {
-  const { isAuthenticated } = useAuthStore();
-  
-  if (isAuthenticated) {
+  const { isAuthenticated, authRequired } = useAuthStore();
+
+  if (!authRequired || isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return children;
 }
 
 export default function App() {
+  const checkAuthRequired = useAuthStore((s) => s.checkAuthRequired);
+
+  useEffect(() => {
+    checkAuthRequired();
+  }, [checkAuthRequired]);
+
   return (
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
-        <Route 
-          path="/login" 
+        <Route
+          path="/login"
           element={
             <PublicRoute>
               <Login />
             </PublicRoute>
-          } 
+          }
         />
-        
+
         {/* Protected Routes */}
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
             <AuthGuard>
               <MainLayout />
@@ -67,23 +79,23 @@ export default function App() {
           <Route path="tools" element={<Tools />} />
           <Route path="skills" element={<Skills />} />
           <Route path="settings" element={<Settings />} />
-          
+
           {/* Admin Only Routes */}
-          <Route 
-            path="users" 
+          <Route
+            path="users"
             element={
               <AuthGuard requireAdmin>
                 <Users />
               </AuthGuard>
-            } 
+            }
           />
-          <Route 
-            path="roles" 
+          <Route
+            path="roles"
             element={
               <AuthGuard requireAdmin>
                 <Roles />
               </AuthGuard>
-            } 
+            }
           />
         </Route>
       </Routes>

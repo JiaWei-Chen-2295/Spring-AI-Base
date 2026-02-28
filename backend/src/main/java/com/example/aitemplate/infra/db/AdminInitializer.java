@@ -3,12 +3,14 @@ package com.example.aitemplate.infra.db;
 import com.example.aitemplate.core.user.Role;
 import com.example.aitemplate.core.user.User;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
 @Component
+@ConditionalOnProperty(name = "app.features.auth-enabled", havingValue = "true")
 public class AdminInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;

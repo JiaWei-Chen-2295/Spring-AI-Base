@@ -28,15 +28,25 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor - handle 401 errors
+// Response interceptor - handle auth errors
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Clear auth and redirect to login
+    const status = error.response?.status;
+    const url = error.config?.url;
+
+    if (status === 401) {
+      console.warn(`[Auth] 401 Unauthorized — clearing session and redirecting to login (url: ${url})`);
       localStorage.removeItem('auth-storage');
       window.location.href = '/login';
+    } else if (status === 403) {
+      console.warn(`[Auth] 403 Forbidden — insufficient permissions (url: ${url})`);
+      // Don't redirect to login; the user is authenticated but lacks permission.
+      // Let the calling component handle the error via the rejected Promise.
+    } else if (status >= 500) {
+      console.error(`[API] Server error ${status} for ${url}:`, error.response?.data);
     }
+
     return Promise.reject(error);
   }
 );

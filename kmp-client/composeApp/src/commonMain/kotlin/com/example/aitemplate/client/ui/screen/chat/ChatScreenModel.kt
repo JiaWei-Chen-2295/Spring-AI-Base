@@ -11,6 +11,8 @@ import com.example.aitemplate.client.ui.screen.auth.LoginScreen
 import com.example.aitemplate.client.ui.screen.settings.SettingsScreenModel
 import com.example.aitemplate.client.util.generateConversationId
 import com.russhwolf.settings.Settings
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -99,6 +101,12 @@ class ChatScreenModel(
                 // Auto-select first model if none selected
                 if (selectedModelId.isBlank() && fetchedModels.isNotEmpty()) {
                     selectedModelId = fetchedModels.first().modelId
+                }
+            } catch (e: ClientRequestException) {
+                if (e.response.status == HttpStatusCode.Unauthorized) {
+                    logout() // token expired — clear credentials and redirect to LoginScreen
+                } else {
+                    error = "Failed to load metadata: ${e.message}"
                 }
             } catch (e: Exception) {
                 error = "Failed to load metadata: ${e.message}"

@@ -31,3 +31,8 @@ data class SkillInfo(
     val source: String = "builtin",
     val editable: Boolean = false
 )
+
+@Serializable
+data class AppConfig(
+    val authEnabled: Boolean = true
+)

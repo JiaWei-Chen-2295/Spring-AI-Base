@@ -37,15 +37,18 @@ val networkModule = module {
                 connectTimeoutMillis = 10_000
             }
             
-            // Handle 401 errors
+            // Throw exceptions for error responses; clear credentials on 401
             HttpResponseValidator {
                 validateResponse { response ->
                     if (response.status == HttpStatusCode.Unauthorized) {
-                        // Clear auth and let UI handle redirect
-                        val settings = Settings()
-                        settings.remove("access_token")
-                        settings.remove("refresh_token")
+                        Settings().apply {
+                            remove("access_token")
+                            remove("refresh_token")
+                        }
                     }
+                    val code = response.status.value
+                    if (code in 400..499) throw ClientRequestException(response, response.status.description)
+                    if (code in 500..599) throw ServerResponseException(response, response.status.description)
                 }
             }
         }

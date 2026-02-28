@@ -6,7 +6,10 @@ import com.example.aitemplate.api.dto.ToolInfo;
 import com.example.aitemplate.app.ModelRegistry;
 import com.example.aitemplate.app.SkillRegistry;
 import com.example.aitemplate.app.ToolRegistry;
+import com.example.aitemplate.core.PublicApi;
 import java.util.List;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,6 +21,9 @@ public class MetadataController {
     private final ModelRegistry modelRegistry;
     private final ToolRegistry toolRegistry;
     private final SkillRegistry skillRegistry;
+
+    @Value("${app.features.auth-enabled:false}")
+    private boolean authEnabled;
 
     public MetadataController(ModelRegistry modelRegistry, ToolRegistry toolRegistry, SkillRegistry skillRegistry) {
         this.modelRegistry = modelRegistry;
@@ -46,5 +52,11 @@ public class MetadataController {
                         entry.source(),
                         entry.editable()))
                 .toList();
+    }
+
+    @PublicApi
+    @GetMapping("/config")
+    public Map<String, Object> config() {
+        return Map.of("authEnabled", authEnabled);
     }
 }

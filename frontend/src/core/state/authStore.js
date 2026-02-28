@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authApi } from '../api/auth';
+import { authApi, fetchConfig } from '../api/auth';
 
 export const useAuthStore = create(
   persist(
@@ -12,14 +12,26 @@ export const useAuthStore = create(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      authRequired: true, // assume auth required until /api/config responds
 
       // Actions
+
+      /** Check backend config to determine if auth is required. */
+      checkAuthRequired: async () => {
+        try {
+          const config = await fetchConfig();
+          set({ authRequired: !!config.authEnabled });
+        } catch (_) {
+          // If the call fails, keep the safe default (authRequired=true)
+        }
+      },
+
       login: async (username, password) => {
         set({ isLoading: true, error: null });
         try {
           const response = await authApi.login(username, password);
           const { accessToken, refreshToken, user } = response.data;
-          
+
           set({
             token: accessToken,
             refreshToken,

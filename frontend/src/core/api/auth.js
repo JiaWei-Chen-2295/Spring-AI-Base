@@ -18,3 +18,9 @@ export const authApi = {
   changePassword: (oldPassword, newPassword) =>
     apiClient.put('/api/auth/password', { oldPassword, newPassword }),
 };
+
+/** Fetch public app config (no auth required). */
+export async function fetchConfig() {
+  const resp = await apiClient.get('/api/config');
+  return resp.data;
+}

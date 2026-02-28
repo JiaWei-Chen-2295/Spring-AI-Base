@@ -1,5 +1,6 @@
 package com.example.aitemplate.client.data.remote
 
+import com.example.aitemplate.client.data.model.AppConfig
 import com.example.aitemplate.client.data.model.ModelInfo
 import com.example.aitemplate.client.data.model.SkillInfo
 import com.example.aitemplate.client.data.model.ToolInfo
@@ -40,4 +41,8 @@ class MetadataApi(private val client: HttpClient) {
                 header(key, value)
             }
         }.body()
+
+    /** Public — no auth header needed, but harmless to include. */
+    suspend fun fetchConfig(baseUrl: String): AppConfig =
+        client.get("$baseUrl/api/config").body()
 }

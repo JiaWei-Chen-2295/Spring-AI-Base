@@ -52,6 +52,20 @@ export function buildStreamUrl({ conversationId, model, message, tools = [], ski
   });
   tools.forEach((tool) => params.append('tools', tool));
   skills.forEach((skill) => params.append('skills', skill));
+
+  // Attach JWT token as query param for SSE (EventSource cannot set headers)
+  try {
+    const authStorage = localStorage.getItem('auth-storage');
+    if (authStorage) {
+      const auth = JSON.parse(authStorage);
+      if (auth.state?.token) {
+        params.set('token', auth.state.token);
+      }
+    }
+  } catch (_) {
+    // ignore
+  }
+
   return `/api/chat/stream?${params.toString()}`;
 }
 

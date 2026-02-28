@@ -3,6 +3,7 @@ package com.example.aitemplate.client.data.sse
 import com.example.aitemplate.client.data.model.SkillApplyInfo
 import com.example.aitemplate.client.data.model.SseEvent
 import com.example.aitemplate.client.data.model.ToolCallInfo
+import com.russhwolf.settings.Settings
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -81,6 +82,9 @@ class SseClient(private val httpClient: HttpClient) {
             append("message", message)
             tools.forEach { append("tools", it) }
             skills.forEach { append("skills", it) }
+            // SSE cannot set headers; pass JWT as query param for auth-enabled=true
+            val token = Settings().getStringOrNull("access_token")
+            if (token != null) append("token", token)
         }
         return "$baseUrl/api/chat/stream?${params.build().formUrlEncode()}"
     }
